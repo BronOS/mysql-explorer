@@ -32,6 +32,7 @@ type Action =
   | { type: 'CLOSE_TAB'; tabId: string }
   | { type: 'SET_ACTIVE_TAB'; tabId: string }
   | { type: 'SET_SCHEMA'; connectionId: string; databases: SchemaTree[string]['databases']; loaded: boolean }
+  | { type: 'SET_COLUMNS'; connectionId: string; database: string; columns: { [tableName: string]: string[] } }
   | { type: 'SET_TABLES'; connectionId: string; database: string; tables: string[] };
 
 function reducer(state: AppState, action: Action): AppState {
@@ -81,6 +82,18 @@ function reducer(state: AppState, action: Action): AppState {
       if (!connSchema) return state;
       const databases = connSchema.databases.map(db =>
         db.name === action.database ? { ...db, tables: action.tables, loaded: true } : db
+      );
+      return {
+        ...state,
+        schema: { ...state.schema, [action.connectionId]: { ...connSchema, databases } },
+      };
+    }
+
+    case 'SET_COLUMNS': {
+      const connSchema = state.schema[action.connectionId];
+      if (!connSchema) return state;
+      const databases = connSchema.databases.map(db =>
+        db.name === action.database ? { ...db, columns: { ...db.columns, ...action.columns } } : db
       );
       return {
         ...state,

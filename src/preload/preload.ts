@@ -14,6 +14,7 @@ const electronAPI = {
   schemaDatabases: (connectionId: string) => ipcRenderer.invoke('schema:databases', connectionId),
   schemaTables: (connectionId: string, database: string) => ipcRenderer.invoke('schema:tables', connectionId, database),
   schemaDescribe: (connectionId: string, database: string, table: string) => ipcRenderer.invoke('schema:describe', connectionId, database, table),
+  schemaAllColumns: (connectionId: string, database: string, tables: string[]) => ipcRenderer.invoke('schema:all-columns', connectionId, database, tables),
 
   // Query
   queryUseDatabase: (connectionId: string, database: string) => ipcRenderer.invoke('query:use-database', connectionId, database),

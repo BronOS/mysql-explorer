@@ -42,6 +42,22 @@ export function registerIpcHandlers(
     return schemaBrowser.describeTable(pool, database, table);
   });
 
+  ipcMain.handle('schema:all-columns', async (_, connectionId, database, tables: string[]) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    const result: { [table: string]: string[] } = {};
+    // Fetch in parallel, batches of 10 to avoid overwhelming the pool
+    for (let i = 0; i < tables.length; i += 10) {
+      const batch = tables.slice(i, i + 10);
+      const descriptions = await Promise.all(
+        batch.map(t => schemaBrowser.describeTable(pool, database, t).catch(() => []))
+      );
+      batch.forEach((t, idx) => {
+        result[t] = descriptions[idx].map(c => c.name);
+      });
+    }
+    return result;
+  });
+
   // Query
   ipcMain.handle('query:use-database', async (_, connectionId, database) => {
     const pool = await connectionManager.ensureConnected(connectionId);

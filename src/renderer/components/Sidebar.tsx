@@ -51,7 +51,7 @@ export default function Sidebar({ width }: { width: number }) {
             dispatch({
               type: 'SET_SCHEMA',
               connectionId: connId,
-              databases: dbs.map((name: string) => ({ name, tables: [], loaded: false })),
+              databases: dbs.map((name: string) => ({ name, tables: [], columns: {}, loaded: false })),
               loaded: true,
             });
             setExpandedConns(prev => new Set(prev).add(connId));
@@ -63,6 +63,10 @@ export default function Sidebar({ width }: { width: number }) {
               const tables = await ipc.schemaTables(connId, dbName);
               dispatch({ type: 'SET_TABLES', connectionId: connId, database: dbName, tables });
               setExpandedDbs(prev => new Set(prev).add(dbKey));
+              // Background prefetch columns
+              ipc.schemaAllColumns(connId, dbName, tables).then((columns: { [table: string]: string[] }) => {
+                dispatch({ type: 'SET_COLUMNS', connectionId: connId, database: dbName, columns });
+              }).catch(() => {});
             }
           } catch {
             // Connection failed, skip silently
@@ -91,7 +95,7 @@ export default function Sidebar({ width }: { width: number }) {
       dispatch({
         type: 'SET_SCHEMA',
         connectionId: connId,
-        databases: dbs.map((name: string) => ({ name, tables: [], loaded: false })),
+        databases: dbs.map((name: string) => ({ name, tables: [], columns: {}, loaded: false })),
         loaded: true,
       });
     }
@@ -110,7 +114,7 @@ export default function Sidebar({ width }: { width: number }) {
       dispatch({
         type: 'SET_SCHEMA',
         connectionId: conn.id,
-        databases: dbs.map((name: string) => ({ name, tables: [], loaded: false })),
+        databases: dbs.map((name: string) => ({ name, tables: [], columns: {}, loaded: false })),
         loaded: true,
       });
       setExpandedConns(prev => new Set(prev).add(conn.id));
@@ -131,6 +135,11 @@ export default function Sidebar({ width }: { width: number }) {
     const tables = await ipc.schemaTables(connectionId, dbName);
     dispatch({ type: 'SET_TABLES', connectionId, database: dbName, tables });
     setExpandedDbs(prev => new Set(prev).add(key));
+
+    // Background prefetch all column names for autocomplete
+    ipc.schemaAllColumns(connectionId, dbName, tables).then((columns: { [table: string]: string[] }) => {
+      dispatch({ type: 'SET_COLUMNS', connectionId, database: dbName, columns });
+    }).catch(() => {});
   };
 
   const handleTableClick = (conn: ConnectionConfig, database: string, table: string) => {

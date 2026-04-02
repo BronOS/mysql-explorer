@@ -202,7 +202,7 @@ export default function SqlConsole({ tab }: Props) {
     } catch {}
   };
 
-  // Build autocomplete schema from sidebar data
+  // Build autocomplete schema from sidebar data (including column names)
   const completionSchema = useCallback(() => {
     const connSchema = schema[tab.connectionId];
     if (!connSchema) return {};
@@ -210,7 +210,7 @@ export default function SqlConsole({ tab }: Props) {
     for (const db of connSchema.databases) {
       tables[db.name] = db.tables;
       for (const table of db.tables) {
-        tables[table] = [];
+        tables[table] = db.columns?.[table] || [];
       }
     }
     return tables;

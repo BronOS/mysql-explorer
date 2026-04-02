@@ -69,6 +69,7 @@ export interface SchemaTree {
     databases: {
       name: string;
       tables: string[];
+      columns: { [tableName: string]: string[] };
       loaded: boolean;
     }[];
     loaded: boolean;
