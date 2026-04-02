@@ -8,7 +8,7 @@ import SqlConsole from './components/SqlConsole';
 export default function App() {
   const { tabs, activeTabId } = useAppContext();
   const activeTab = tabs.find(t => t.id === activeTabId);
-  const [sidebarWidth, setSidebarWidth] = useState(240);
+  const [sidebarWidth, setSidebarWidth] = useState(() => Number(localStorage.getItem('sidebarWidth')) || 240);
   const dragging = useRef(false);
 
   useEffect(() => {
@@ -24,6 +24,10 @@ export default function App() {
       window.removeEventListener('mouseup', handleMouseUp);
     };
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('sidebarWidth', String(sidebarWidth));
+  }, [sidebarWidth]);
 
   return (
     <div className="app">

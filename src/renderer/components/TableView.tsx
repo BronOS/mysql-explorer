@@ -18,7 +18,7 @@ export default function TableView({ tab }: Props) {
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const [where, setWhere] = useState('');
-  const [saveMode, setSaveMode] = useState<'auto' | 'bulk'>('auto');
+  const [saveMode, setSaveMode] = useState<'auto' | 'bulk'>(() => (localStorage.getItem('saveMode') as 'auto' | 'bulk') || 'auto');
   const [pendingChanges, setPendingChanges] = useState<Map<string, unknown>>(new Map());
   const [loading, setLoading] = useState(true);
   const [primaryKey, setPrimaryKey] = useState<string | null>(null);
@@ -96,7 +96,7 @@ export default function TableView({ tab }: Props) {
         columns={columns}
         onFilterChange={handleFilterChange}
         saveMode={saveMode}
-        onSaveModeChange={setSaveMode}
+        onSaveModeChange={(mode) => { setSaveMode(mode); localStorage.setItem('saveMode', mode); }}
         onRefresh={handleRefresh}
       />
       {saveMode === 'bulk' && pendingChanges.size > 0 && (
