@@ -136,6 +136,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .row-draft { background: #2d3b2d !important; border-left: 3px solid #a5c261; }
 .row-selected { background: #214283 !important; }
 .row-selected:nth-child(even) { background: #214283 !important; }
+.result-table-container .datagrid tbody tr { user-select: none; cursor: default; }
 .result-table-container { display: flex; flex-direction: column; flex: 1; overflow: hidden; position: relative; }
 .copy-feedback { position: absolute; top: 8px; right: 12px; background: #4b6eaf; color: #fff; padding: 4px 12px; border-radius: 3px; font-size: 11px; z-index: 20; }
 

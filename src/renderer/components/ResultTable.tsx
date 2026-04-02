@@ -112,7 +112,11 @@ export default function ResultTable({ columns, rows }: Props) {
                 onClick={(e) => handleRowClick(rowIdx, e)}
                 onContextMenu={(e) => {
                   e.preventDefault();
-                  handleRowClick(rowIdx, e);
+                  // If right-clicked row is already selected, keep selection
+                  if (!selectedRows.has(rowIdx)) {
+                    setSelectedRows(new Set([rowIdx]));
+                    setLastClickedRow(rowIdx);
+                  }
                   setContextMenu({ x: e.clientX, y: e.clientY });
                 }}
               >
