@@ -299,8 +299,9 @@ export default function Sidebar({ width }: { width: number }) {
         {[...connections].sort((a, b) => a.name.localeCompare(b.name)).map(conn => {
           const isConnActive = activeTab?.type === 'console' && activeTab.connectionId === conn.id;
           return (
-          <div key={conn.id} ref={isConnActive ? activeNodeRef : undefined}>
+          <div key={conn.id}>
             <div
+              ref={isConnActive ? activeNodeRef : undefined}
               className={`tree-node ${isConnActive ? 'tree-node-active' : ''}`}
               onClick={() => toggleConnection(conn)}
               onContextMenu={(e) => handleContextMenu(e, conn.id)}
