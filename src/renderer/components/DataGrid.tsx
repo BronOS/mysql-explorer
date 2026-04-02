@@ -1,8 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useReactTable, getCoreRowModel, flexRender, ColumnDef } from '@tanstack/react-table';
 import { ColumnMeta } from '../../shared/types';
 import CellEditor from './CellEditor';
 import TextEditModal from './TextEditModal';
+
+interface CellContextMenu {
+  x: number;
+  y: number;
+  pkValue: unknown;
+  column: ColumnMeta;
+  value: unknown;
+}
 
 interface Props {
   columns: ColumnMeta[];
@@ -15,7 +23,14 @@ interface Props {
 
 export default function DataGrid({ columns, rows, primaryKey, saveMode, onCellSave, pendingChanges }: Props) {
   const [textModal, setTextModal] = useState<{ value: string; onSave: (v: string) => void } | null>(null);
+  const [cellMenu, setCellMenu] = useState<CellContextMenu | null>(null);
   const editable = primaryKey !== null;
+
+  useEffect(() => {
+    const handler = () => setCellMenu(null);
+    window.addEventListener('click', handler);
+    return () => window.removeEventListener('click', handler);
+  }, []);
 
   const tableCols = useMemo<ColumnDef<Record<string, unknown>>[]>(() =>
     columns.map(col => ({
@@ -66,9 +81,22 @@ export default function DataGrid({ columns, rows, primaryKey, saveMode, onCellSa
               <tr key={row.id}>
                 {row.getVisibleCells().map(cell => {
                   const pkValue = primaryKey ? row.original[primaryKey] : null;
+                  const colMeta = columns.find(c => c.name === cell.column.id);
                   const isModified = pendingChanges.has(`${pkValue}:${cell.column.id}`);
                   return (
-                    <td key={cell.id} className={isModified ? 'cell-modified' : ''}>
+                    <td
+                      key={cell.id}
+                      className={isModified ? 'cell-modified' : ''}
+                      onContextMenu={(e) => {
+                        if (!editable || !colMeta || colMeta.key === 'PRI') return;
+                        e.preventDefault();
+                        const changeKey = `${pkValue}:${cell.column.id}`;
+                        const currentValue = pendingChanges.has(changeKey)
+                          ? pendingChanges.get(changeKey)
+                          : row.original[cell.column.id];
+                        setCellMenu({ x: e.clientX, y: e.clientY, pkValue, column: colMeta, value: currentValue });
+                      }}
+                    >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   );
@@ -89,6 +117,44 @@ export default function DataGrid({ columns, rows, primaryKey, saveMode, onCellSa
           onSave={textModal.onSave}
           onClose={() => setTextModal(null)}
         />
+      )}
+
+      {cellMenu && (
+        <div className="context-menu" style={{ left: cellMenu.x, top: cellMenu.y }}>
+          {cellMenu.column.nullable && (
+            <div
+              className="context-menu-item"
+              onClick={() => { onCellSave(cellMenu.pkValue, cellMenu.column.name, null); setCellMenu(null); }}
+            >
+              Set NULL
+            </div>
+          )}
+          <div
+            className="context-menu-item"
+            onClick={() => { onCellSave(cellMenu.pkValue, cellMenu.column.name, cellMenu.column.defaultValue); setCellMenu(null); }}
+          >
+            Set Default{cellMenu.column.defaultValue !== null ? ` (${cellMenu.column.defaultValue})` : ''}
+          </div>
+          <div
+            className="context-menu-item"
+            onClick={() => {
+              const text = cellMenu.value === null ? '' : String(cellMenu.value);
+              navigator.clipboard.writeText(text);
+              setCellMenu(null);
+            }}
+          >
+            Copy Value
+          </div>
+          <div
+            className="context-menu-item"
+            onClick={() => {
+              navigator.clipboard.writeText(cellMenu.column.name);
+              setCellMenu(null);
+            }}
+          >
+            Copy Column Name
+          </div>
+        </div>
       )}
     </>
   );
