@@ -124,7 +124,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .datagrid { width: 100%; border-spacing: 0; font-size: 12px; }
 .datagrid-header { overflow: hidden; flex-shrink: 0; }
 .datagrid-header .datagrid { table-layout: auto; }
-.datagrid thead th { padding: 8px 12px; text-align: left; color: #a9b7c6; font-weight: 500; background: #3c3f41; white-space: nowrap; user-select: none; border-bottom: 1px solid #515151; border-right: 1px solid #4d4d4d; }
+.datagrid thead th { padding: 8px 12px; text-align: left; color: #a9b7c6; font-weight: 500; background: #3c3f41; white-space: nowrap; user-select: none; border-bottom: 1px solid #515151; border-right: 1px solid #4d4d4d; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box; }
 .th-sortable { cursor: pointer; }
 .th-sortable:hover { background: #4b6eaf33; }
 .sort-indicator { font-size: 9px; opacity: 0.7; }
