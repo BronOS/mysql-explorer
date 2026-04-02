@@ -247,7 +247,7 @@ export default function SqlConsole({ tab }: Props) {
   // Custom context-aware completion source
   const columnCompletionExt = useMemo(() => {
     const TABLE_CONTEXT = /\b(FROM|JOIN|INTO|UPDATE|TABLE)\s+\w*$/i;
-    const SELECT_CONTEXT = /\bSELECT\s+(?:DISTINCT\s+)?(?:[\w.*,\s`]+,\s*)?$/i;
+    const COLUMN_CONTEXT = /\b(SET|WHERE|AND|OR|ON|HAVING|ORDER\s+BY|GROUP\s+BY|VALUES\s*\(|SELECT)\s+(?:DISTINCT\s+)?(?:[\w.*,\s`]+,\s*)?$/i;
 
     /**
      * Extract table references from a query string.
@@ -280,22 +280,24 @@ export default function SqlConsole({ tab }: Props) {
       const word = context.matchBefore(/\w+/);
       if (!word && !context.explicit) return null;
 
-      // After FROM/JOIN/INTO/UPDATE/TABLE — suggest tables, not columns
-      const line = context.state.doc.lineAt(context.pos);
-      const textBefore = line.text.slice(0, context.pos - line.from);
-      if (TABLE_CONTEXT.test(textBefore)) return null;
+      // Check context from text before cursor (within the current query, not just current line)
+      const doc = context.state.doc.toString();
+      const queryBlock = findQueryAtCursor(doc, context.pos);
+      const textBeforeCursor = doc.slice(queryBlock.from, word?.from ?? context.pos);
+
+      // If the last keyword before cursor is a table context, suggest tables not columns
+      // But column contexts (SET, WHERE, etc.) override even if UPDATE appears earlier
+      const isColumnContext = COLUMN_CONTEXT.test(textBeforeCursor);
+      if (!isColumnContext && TABLE_CONTEXT.test(textBeforeCursor)) return null;
 
       // Ctrl+Space (explicit) → columns on top; typing → normal boost
       const isExplicit = context.explicit;
-      const isSelectContext = SELECT_CONTEXT.test(textBefore);
+      const isSelectContext = /\bSELECT\b/i.test(textBeforeCursor) && !/\bFROM\b/i.test(textBeforeCursor);
 
-      // Get current query block
-      const doc = context.state.doc.toString();
-      const query = findQueryAtCursor(doc, context.pos);
-      if (!query.text) return null;
+      if (!queryBlock.text) return null;
 
       // Extract table references from the FULL query (including parts after cursor)
-      const tableRefs = extractTableRefs(query.text);
+      const tableRefs = extractTableRefs(queryBlock.text);
 
       let completions: Completion[];
 
