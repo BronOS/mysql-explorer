@@ -4,7 +4,7 @@ import { useAppContext } from '../context/app-context';
 import { useIpc } from '../hooks/use-ipc';
 import { ConnectionConfig } from '../../shared/types';
 
-export default function Sidebar() {
+export default function Sidebar({ width }: { width: number }) {
   const [showDialog, setShowDialog] = useState(false);
   const [editingConnection, setEditingConnection] = useState<ConnectionConfig | undefined>();
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; connectionId: string } | null>(null);
@@ -122,7 +122,7 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="sidebar">
+    <div className="sidebar" style={{ width }}>
       <div className="sidebar-header">
         <span className="sidebar-title">Connections</span>
         <button className="sidebar-refresh" title="Refresh all" onClick={handleRefreshAll}>↻</button>
