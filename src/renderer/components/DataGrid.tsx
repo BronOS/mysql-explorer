@@ -40,6 +40,12 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
     return () => window.removeEventListener('click', handler);
   }, []);
 
+  useEffect(() => {
+    if (draftRows.length > 0 && lastDraftRef.current) {
+      lastDraftRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [draftRows.length]);
+
   useLayoutEffect(() => {
     if (cellMenu && menuRef.current) {
       const rect = menuRef.current.getBoundingClientRect();
@@ -49,7 +55,8 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
     }
   }, [cellMenu]);
 
-  const allRows = useMemo(() => [...draftRows, ...rows], [draftRows, rows]);
+  const allRows = useMemo(() => [...rows, ...draftRows], [rows, draftRows]);
+  const lastDraftRef = useRef<HTMLTableRowElement>(null);
 
   const tableCols = useMemo<ColumnDef<Record<string, unknown>>[]>(() =>
     columns.map(col => ({
@@ -111,10 +118,11 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
             ))}
           </thead>
           <tbody>
-            {table.getRowModel().rows.map(row => {
+            {table.getRowModel().rows.map((row, rowIdx) => {
               const isDraft = '__draftId' in row.original;
+              const isLastDraft = isDraft && rowIdx === table.getRowModel().rows.length - 1;
               return (
-              <tr key={row.id} className={isDraft ? 'row-draft' : ''}>
+              <tr key={row.id} className={isDraft ? 'row-draft' : ''} ref={isLastDraft ? lastDraftRef : undefined}>
                 {row.getVisibleCells().map(cell => {
                   const pkValue = isDraft ? row.original.__draftId : (primaryKey ? row.original[primaryKey] : null);
                   const colMeta = columns.find(c => c.name === cell.column.id);
