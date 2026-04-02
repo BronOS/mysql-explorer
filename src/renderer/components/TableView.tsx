@@ -125,7 +125,8 @@ export default function TableView({ tab }: Props) {
       const rowsToInsert = draftRows.map(r => {
         const row: Record<string, unknown> = {};
         for (const col of columns) {
-          if (col.extra === 'auto_increment') continue; // skip auto-increment PK
+          // Skip auto-increment if user didn't change it from default
+          if (col.extra === 'auto_increment' && (r[col.name] === '(auto)' || r[col.name] === undefined)) continue;
           if (r[col.name] !== undefined && r[col.name] !== null) {
             row[col.name] = r[col.name];
           }

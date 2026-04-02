@@ -70,8 +70,7 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
           ? pendingChanges.get(changeKey)
           : row.original[col.name];
 
-        const isAutoIncrement = col.extra === 'auto_increment';
-        const cellEditable = isDraft ? !isAutoIncrement : (editable && col.key !== 'PRI');
+        const cellEditable = isDraft ? true : (editable && col.key !== 'PRI');
 
         return (
           <CellEditor
