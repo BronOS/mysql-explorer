@@ -13,17 +13,18 @@ export default defineConfig({
     },
   },
   plugins: [
-    // Handle native .node modules — leave them as external requires
     {
       name: 'native-node-modules',
       resolveId(source) {
-        // cpu-features is an optional native addon, skip it
+        // Skip optional native addons — ssh2 and mysql2 fall back to pure JS
         if (source === 'cpu-features') return { id: source, external: true };
         return null;
       },
       load(id) {
+        // Replace .node native binary imports with empty stubs
+        // ssh2 has a JS fallback for its crypto, mysql2 doesn't need native addons
         if (id.endsWith('.node')) {
-          return `export default require(${JSON.stringify(id)})`;
+          return 'export default {}';
         }
         return null;
       },
