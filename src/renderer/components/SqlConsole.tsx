@@ -231,48 +231,114 @@ export default function SqlConsole({ tab }: Props) {
 
   const schemaObj = completionSchema();
 
-  // Build column completions list from schema
-  const columnCompletions = useMemo((): Completion[] => {
-    const seen = new Set<string>();
-    const completions: Completion[] = [];
+  // Build full column map: { tableName: [col1, col2, ...] }
+  const allColumnsMap = useMemo((): Record<string, string[]> => {
+    const map: Record<string, string[]> = {};
     const connSchema = schema[tab.connectionId];
-    if (!connSchema) return completions;
+    if (!connSchema) return map;
     for (const db of connSchema.databases) {
       for (const [table, cols] of Object.entries(db.columns || {})) {
-        for (const col of cols) {
-          if (!seen.has(col)) {
-            seen.add(col);
-            completions.push({ label: col, type: 'property', detail: table });
-          }
-        }
+        map[table] = cols;
       }
     }
-    return completions;
+    return map;
   }, [schema, tab.connectionId]);
 
-  // Custom completion source for column names in SQL contexts
+  // Custom context-aware completion source
   const columnCompletionExt = useMemo(() => {
     const TABLE_CONTEXT = /\b(FROM|JOIN|INTO|UPDATE|TABLE)\s+\w*$/i;
+
+    /**
+     * Extract table references from a query string.
+     * Handles: FROM table, JOIN table, UPDATE table, INSERT INTO table
+     * Also captures aliases: FROM users u, JOIN orders AS o
+     * Returns: { realName: string, alias?: string }[]
+     */
+    function extractTableRefs(queryText: string): { name: string; alias?: string }[] {
+      const refs: { name: string; alias?: string }[] = [];
+      // FROM/JOIN table [AS] alias
+      const fromJoinRe = /\b(?:FROM|JOIN)\s+`?(\w+)`?(?:\s+(?:AS\s+)?`?(\w+)`?)?/gi;
+      let m;
+      while ((m = fromJoinRe.exec(queryText)) !== null) {
+        refs.push({ name: m[1], alias: m[2] });
+      }
+      // UPDATE table [AS] alias
+      const updateRe = /\bUPDATE\s+`?(\w+)`?(?:\s+(?:AS\s+)?`?(\w+)`?)?/gi;
+      while ((m = updateRe.exec(queryText)) !== null) {
+        refs.push({ name: m[1], alias: m[2] });
+      }
+      // INSERT INTO table
+      const insertRe = /\bINSERT\s+INTO\s+`?(\w+)`?/gi;
+      while ((m = insertRe.exec(queryText)) !== null) {
+        refs.push({ name: m[1] });
+      }
+      return refs;
+    }
 
     function completeColumns(context: CompletionContext): CompletionResult | null {
       const word = context.matchBefore(/\w+/);
       if (!word && !context.explicit) return null;
-      if (columnCompletions.length === 0) return null;
 
-      // After FROM/JOIN/INTO/UPDATE/TABLE — let SQL plugin suggest tables instead
+      // After FROM/JOIN/INTO/UPDATE/TABLE — suggest tables, not columns
       const line = context.state.doc.lineAt(context.pos);
       const textBefore = line.text.slice(0, context.pos - line.from);
       if (TABLE_CONTEXT.test(textBefore)) return null;
 
+      // Get current query block
+      const doc = context.state.doc.toString();
+      const query = findQueryAtCursor(doc, context.pos);
+      if (!query.text) return null;
+
+      // Extract table references from the query
+      const tableRefs = extractTableRefs(query.text);
+
+      let completions: Completion[];
+
+      if (tableRefs.length > 0) {
+        // Context-aware: only suggest columns from referenced tables
+        completions = [];
+        const seen = new Set<string>();
+        for (const ref of tableRefs) {
+          const cols = allColumnsMap[ref.name];
+          if (!cols) continue;
+          const prefix = tableRefs.length > 1 ? ref.alias || ref.name : undefined;
+          for (const col of cols) {
+            const key = `${ref.name}.${col}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            completions.push({
+              label: col,
+              type: 'property',
+              detail: ref.alias ? `${ref.name} (${ref.alias})` : ref.name,
+              boost: 1, // prioritize over SQL keywords
+            });
+          }
+        }
+      } else {
+        // No tables detected yet — suggest all columns as fallback
+        completions = [];
+        const seen = new Set<string>();
+        for (const [table, cols] of Object.entries(allColumnsMap)) {
+          for (const col of cols) {
+            if (!seen.has(col)) {
+              seen.add(col);
+              completions.push({ label: col, type: 'property', detail: table });
+            }
+          }
+        }
+      }
+
+      if (completions.length === 0) return null;
+
       return {
         from: word.from,
-        options: columnCompletions,
+        options: completions,
         validFor: /^\w*$/,
       };
     }
 
     return EditorState.languageData.of(() => [{ autocomplete: completeColumns }]);
-  }, [columnCompletions]);
+  }, [allColumnsMap]);
 
   const extensions = useMemo(() => [
     editorKeymaps,
