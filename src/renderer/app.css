@@ -134,6 +134,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .cm-editor .cm-cursor { border-left-color: #ffffff !important; }
 .sql-codemirror { flex: 1; overflow: hidden; }
 .sql-codemirror .cm-editor { height: 100%; }
+.sql-codemirror .cm-scroller { overflow: auto; scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.sql-codemirror .cm-scroller:hover { scrollbar-color: #0f3460 transparent; }
+.sql-codemirror .cm-scroller::-webkit-scrollbar { width: 6px; height: 6px; }
+.sql-codemirror .cm-scroller::-webkit-scrollbar-track { background: transparent; }
+.sql-codemirror .cm-scroller::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; }
+.sql-codemirror .cm-scroller:hover::-webkit-scrollbar-thumb { background: #0f3460; }
+.sql-codemirror .cm-scroller::-webkit-scrollbar-thumb:hover { background: #00d2ff; }
 .sql-resizer { height: 4px; background: #0f3460; cursor: row-resize; display: flex; align-items: center; justify-content: center; color: #555; font-size: 8px; user-select: none; }
 .sql-resizer:hover { background: #00d2ff; }
 .sql-result { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
