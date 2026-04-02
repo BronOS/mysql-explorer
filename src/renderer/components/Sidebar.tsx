@@ -280,19 +280,15 @@ export default function Sidebar({ width }: { width: number }) {
   return (
     <div className="sidebar" style={{ width }}>
       <div className="sidebar-header">
-        <span className="sidebar-title">Connections</span>
-        <button className="sidebar-refresh" title="Add connection" onClick={() => { setEditingConnection(undefined); setShowDialog(true); }}>+</button>
-        <button className="sidebar-refresh" title="Refresh all" onClick={handleRefreshAll}>↻</button>
-      </div>
-      <div className="sidebar-filter">
         <input
-          className="input"
+          className="input sidebar-filter-input"
           placeholder="Filter tables..."
           value={tableFilter}
           onChange={e => setTableFilter(e.target.value)}
-          style={{ padding: '4px 8px', fontSize: 11 }}
         />
         {tableFilter && <span className="sidebar-filter-clear" onClick={() => setTableFilter('')}>✕</span>}
+        <button className="sidebar-btn" title="Add connection" onClick={() => { setEditingConnection(undefined); setShowDialog(true); }}>+</button>
+        <button className="sidebar-btn" title="Refresh all" onClick={handleRefreshAll}>↻</button>
       </div>
       <div className="sidebar-tree">
         {[...connections].sort((a, b) => a.name.localeCompare(b.name)).map(conn => {

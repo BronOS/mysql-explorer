@@ -14,14 +14,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .sidebar { background: #3c3f41; border-right: 1px solid #515151; display: flex; flex-direction: column; flex-shrink: 0; }
 .sidebar-resizer { width: 4px; cursor: col-resize; background: transparent; flex-shrink: 0; }
 .sidebar-resizer:hover { background: #4b6eaf; }
-.sidebar-header { display: flex; align-items: center; padding: 14px 12px; border-bottom: 1px solid #515151; gap: 4px; }
-.sidebar-title { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #888; flex: 1; }
-.sidebar-refresh { background: none; border: none; color: #888; cursor: pointer; font-size: 20px; padding: 4px 8px; border-radius: 3px; line-height: 1; }
-.sidebar-refresh:hover { background: #4b6eaf33; color: #a9b7c6; }
-.sidebar-footer { padding: 8px; border-top: 1px solid #515151; }
-.sidebar-filter { padding: 8px 8px 0; position: relative; }
-.sidebar-filter-clear { position: absolute; right: 14px; top: 14px; color: #666; cursor: pointer; font-size: 10px; }
+.sidebar-header { display: flex; align-items: center; padding: 6px 8px; border-bottom: 1px solid #515151; gap: 4px; position: relative; }
+.sidebar-filter-input { flex: 1; padding: 5px 24px 5px 8px; font-size: 11px; }
+.sidebar-filter-clear { position: absolute; right: 68px; top: 50%; transform: translateY(-50%); color: #666; cursor: pointer; font-size: 10px; }
 .sidebar-filter-clear:hover { color: #ef4444; }
+.sidebar-btn { background: none; border: none; color: #888; cursor: pointer; font-size: 18px; padding: 4px 6px; border-radius: 3px; line-height: 1; flex-shrink: 0; }
+.sidebar-btn:hover { background: #4b6eaf33; color: #a9b7c6; }
+.sidebar-footer { padding: 8px; border-top: 1px solid #515151; }
 .sidebar-tree { flex: 1; overflow-y: overlay; padding: 8px; scrollbar-width: thin; scrollbar-color: transparent transparent; }
 .sidebar-tree:hover { scrollbar-color: #555 transparent; }
 .sidebar-tree::-webkit-scrollbar { width: 6px; }
