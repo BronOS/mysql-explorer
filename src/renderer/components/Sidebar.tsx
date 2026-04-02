@@ -248,6 +248,7 @@ export default function Sidebar({ width }: { width: number }) {
     <div className="sidebar" style={{ width }}>
       <div className="sidebar-header">
         <span className="sidebar-title">Connections</span>
+        <button className="sidebar-refresh" title="Add connection" onClick={() => { setEditingConnection(undefined); setShowDialog(true); }}>+</button>
         <button className="sidebar-refresh" title="Refresh all" onClick={handleRefreshAll}>↻</button>
       </div>
       <div className="sidebar-filter">
@@ -295,11 +296,6 @@ export default function Sidebar({ width }: { width: number }) {
           </div>
         ))}
 
-      </div>
-      <div className="sidebar-footer">
-        <button className="add-connection-btn" onClick={() => { setEditingConnection(undefined); setShowDialog(true); }}>
-          + Add Connection
-        </button>
       </div>
 
       {showDialog && (
