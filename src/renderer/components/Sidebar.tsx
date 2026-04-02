@@ -15,8 +15,10 @@ export default function Sidebar({ width }: { width: number }) {
   const [tableFilter, setTableFilter] = useState('');
   const initialized = useRef(false);
 
-  const { connections, schema, dispatch, openTab } = useAppContext();
+  const { connections, schema, dispatch, openTab, tabs, activeTabId } = useAppContext();
   const ipc = useIpc();
+  const activeNodeRef = useRef<HTMLDivElement>(null);
+  const activeTab = tabs.find(t => t.id === activeTabId);
 
   // Persist expanded connections (skip initial render)
   useEffect(() => {
@@ -30,6 +32,13 @@ export default function Sidebar({ width }: { width: number }) {
       localStorage.setItem('expandedDbs', JSON.stringify([...expandedDbs]));
     }
   }, [expandedDbs]);
+
+  // Scroll to active node when tab changes
+  useEffect(() => {
+    if (activeNodeRef.current) {
+      activeNodeRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [activeTabId]);
 
   // Helper: persist current schema to disk
   const persistSchema = async (connId: string, databases: { name: string; tables: string[]; columns: { [t: string]: string[] } }[]) => {
@@ -287,10 +296,12 @@ export default function Sidebar({ width }: { width: number }) {
         {tableFilter && <span className="sidebar-filter-clear" onClick={() => setTableFilter('')}>✕</span>}
       </div>
       <div className="sidebar-tree">
-        {[...connections].sort((a, b) => a.name.localeCompare(b.name)).map(conn => (
-          <div key={conn.id}>
+        {[...connections].sort((a, b) => a.name.localeCompare(b.name)).map(conn => {
+          const isConnActive = activeTab?.type === 'console' && activeTab.connectionId === conn.id;
+          return (
+          <div key={conn.id} ref={isConnActive ? activeNodeRef : undefined}>
             <div
-              className="tree-node"
+              className={`tree-node ${isConnActive ? 'tree-node-active' : ''}`}
               onClick={() => toggleConnection(conn)}
               onContextMenu={(e) => handleContextMenu(e, conn.id)}
             >
@@ -307,19 +318,23 @@ export default function Sidebar({ width }: { width: number }) {
                   <span>{db.name}</span>
                 </div>
 
-                {expandedDbs.has(`${conn.id}:${db.name}`) && db.tables.filter(t => !tableFilter || t.toLowerCase().includes(tableFilter.toLowerCase())).map(table => (
-                  <div key={table} className="tree-node-indent">
-                    <div className="tree-node" onClick={() => handleTableClick(conn, db.name, table)} title={table}>
-                      <span style={{ width: 12 }}></span>
-                      <span>📋</span>
-                      <span>{table}</span>
+                {expandedDbs.has(`${conn.id}:${db.name}`) && db.tables.filter(t => !tableFilter || t.toLowerCase().includes(tableFilter.toLowerCase())).map(table => {
+                  const isActive = activeTab?.type === 'table' && activeTab.connectionId === conn.id && activeTab.database === db.name && activeTab.table === table;
+                  return (
+                    <div key={table} className="tree-node-indent" ref={isActive ? activeNodeRef : undefined}>
+                      <div className={`tree-node ${isActive ? 'tree-node-active' : ''}`} onClick={() => handleTableClick(conn, db.name, table)} title={table}>
+                        <span style={{ width: 12 }}></span>
+                        <span>📋</span>
+                        <span>{table}</span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ))}
           </div>
-        ))}
+          );
+        })}
 
       </div>
 
