@@ -280,7 +280,13 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
           <thead>
             {table.getHeaderGroups().map(hg => (
               <tr key={hg.id}>
-                <th className="row-num-header">#</th>
+                <th className="row-num-header" onClick={() => {
+                  if (selectedRows.size === allRows.length) {
+                    setSelectedRows(new Set());
+                  } else {
+                    setSelectedRows(new Set(allRows.map((_, i) => i)));
+                  }
+                }} title={selectedRows.size === allRows.length ? 'Deselect all' : 'Select all'}>#</th>
                 {hg.headers.map(h => {
                   const colId = h.column.id;
                   const sorted = orderBy?.column === colId;
