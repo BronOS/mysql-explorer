@@ -3,7 +3,7 @@ import CodeMirror, { ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { sql, MySQL } from '@codemirror/lang-sql';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { keymap, Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate } from '@codemirror/view';
-import { Prec, EditorState, StateField, StateEffect } from '@codemirror/state';
+import { Prec } from '@codemirror/state';
 import { useIpc } from '../hooks/use-ipc';
 import { useDebounce } from '../hooks/use-debounce';
 import { useAppContext } from '../context/app-context';
@@ -51,34 +51,38 @@ function findQueryAtCursor(code: string, cursorPos: number): { from: number; to:
   return blocks[blocks.length - 1];
 }
 
-// CodeMirror extension to highlight the active query block
-const setActiveQuery = StateEffect.define<{ from: number; to: number } | null>();
-
-const activeQueryField = StateField.define<DecorationSet>({
-  create() { return Decoration.none; },
-  update(deco, tr) {
-    for (const effect of tr.effects) {
-      if (effect.is(setActiveQuery)) {
-        if (!effect.value) return Decoration.none;
-        const { from, to } = effect.value;
-        const decorations: any[] = [];
-        // Find line range
-        const doc = tr.state.doc;
-        const startLine = doc.lineAt(from).number;
-        const endLine = doc.lineAt(Math.min(to, doc.length)).number;
-        for (let line = startLine; line <= endLine; line++) {
-          const lineObj = doc.line(line);
-          decorations.push(activeQueryMark.range(lineObj.from));
-        }
-        return Decoration.set(decorations);
-      }
-    }
-    return deco;
-  },
-  provide: f => EditorView.decorations.from(f),
-});
-
+// CodeMirror plugin to highlight the active query block
 const activeQueryMark = Decoration.line({ class: 'cm-active-query' });
+
+function buildQueryDecorations(state: any): DecorationSet {
+  const selection = state.selection.main;
+  if (!selection.empty) return Decoration.none;
+
+  const doc = state.doc.toString();
+  const query = findQueryAtCursor(doc, selection.head);
+  if (!query.text) return Decoration.none;
+
+  const decorations: any[] = [];
+  const startLine = state.doc.lineAt(query.from).number;
+  const endLine = state.doc.lineAt(Math.min(query.to, state.doc.length)).number;
+  for (let line = startLine; line <= endLine; line++) {
+    const lineObj = state.doc.line(line);
+    decorations.push(activeQueryMark.range(lineObj.from));
+  }
+  return Decoration.set(decorations);
+}
+
+const activeQueryPlugin = ViewPlugin.fromClass(class {
+  decorations: DecorationSet;
+  constructor(view: EditorView) {
+    this.decorations = buildQueryDecorations(view.state);
+  }
+  update(update: ViewUpdate) {
+    if (update.selectionSet || update.docChanged) {
+      this.decorations = buildQueryDecorations(update.state);
+    }
+  }
+}, { decorations: v => v.decorations });
 
 export default function SqlConsole({ tab }: Props) {
   const ipc = useIpc();
@@ -184,28 +188,6 @@ export default function SqlConsole({ tab }: Props) {
     run: () => { handleRunRef.current(); return true; },
   }])), []);
 
-  // Extension to update active query highlight on cursor move
-  const activeQueryUpdater = useMemo(() => EditorView.updateListener.of((update: ViewUpdate) => {
-    if (update.selectionSet || update.docChanged) {
-      const state = update.state;
-      const selection = state.selection.main;
-
-      if (!selection.empty) {
-        // Selection exists — no query highlight needed
-        update.view.dispatch({ effects: setActiveQuery.of(null) });
-        return;
-      }
-
-      const cursorPos = selection.head;
-      const query = findQueryAtCursor(state.doc.toString(), cursorPos);
-      if (query.text) {
-        update.view.dispatch({ effects: setActiveQuery.of({ from: query.from, to: query.to }) });
-      } else {
-        update.view.dispatch({ effects: setActiveQuery.of(null) });
-      }
-    }
-  }), []);
-
   // Resizer
   const handleMouseDown = () => { dragging.current = true; };
   useEffect(() => {
@@ -254,7 +236,7 @@ export default function SqlConsole({ tab }: Props) {
             ref={editorRef}
             value={code}
             onChange={handleCodeChange}
-            extensions={[runKeymap, activeQueryField, activeQueryUpdater, sql({ dialect: MySQL, schema: completionSchema() })]}
+            extensions={[runKeymap, activeQueryPlugin, sql({ dialect: MySQL, schema: completionSchema() })]}
             theme={oneDark}
             height={`${dividerY - 36}px`}
             basicSetup={{ lineNumbers: true, foldGutter: true, autocompletion: true }}
