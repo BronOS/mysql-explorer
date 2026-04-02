@@ -6,7 +6,7 @@ import TableView from './components/TableView';
 import SqlConsole from './components/SqlConsole';
 
 export default function App() {
-  const { tabs, activeTabId } = useAppContext();
+  const { tabs, activeTabId, setActiveTab } = useAppContext();
   const activeTab = tabs.find(t => t.id === activeTabId);
   const [sidebarWidth, setSidebarWidth] = useState(() => Number(localStorage.getItem('sidebarWidth')) || 240);
   const dragging = useRef(false);
@@ -28,6 +28,22 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('sidebarWidth', String(sidebarWidth));
   }, [sidebarWidth]);
+
+  // Ctrl+Tab / Ctrl+Shift+Tab to switch tabs
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'Tab' && tabs.length > 1) {
+        e.preventDefault();
+        const currentIdx = tabs.findIndex(t => t.id === activeTabId);
+        const nextIdx = e.shiftKey
+          ? (currentIdx - 1 + tabs.length) % tabs.length
+          : (currentIdx + 1) % tabs.length;
+        setActiveTab(tabs[nextIdx].id);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [tabs, activeTabId, setActiveTab]);
 
   return (
     <div className="app">
