@@ -250,10 +250,29 @@ export default function Sidebar({ width }: { width: number }) {
     setContextMenu(null);
   };
 
+  const handleImportDataGrip = async () => {
+    const imported = await ipc.importDataGrip();
+    if (imported.length === 0) {
+      alert('No DataGrip MySQL/MariaDB connections found.');
+      return;
+    }
+    const existing = await ipc.connectionList();
+    const existingNames = new Set(existing.map((c: ConnectionConfig) => c.name));
+    let added = 0;
+    for (const conn of imported) {
+      if (existingNames.has(conn.name)) continue;
+      await ipc.connectionCreate(conn);
+      added++;
+    }
+    alert(`Imported ${added} connection(s), skipped ${imported.length - added} duplicates. Passwords not imported — edit each connection to add them.`);
+    loadConnections();
+  };
+
   return (
     <div className="sidebar" style={{ width }}>
       <div className="sidebar-header">
         <span className="sidebar-title">Connections</span>
+        <button className="sidebar-refresh" title="Import from DataGrip" onClick={handleImportDataGrip}>⬇</button>
         <button className="sidebar-refresh" title="Add connection" onClick={() => { setEditingConnection(undefined); setShowDialog(true); }}>+</button>
         <button className="sidebar-refresh" title="Refresh all" onClick={handleRefreshAll}>↻</button>
       </div>

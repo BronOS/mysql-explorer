@@ -3,6 +3,7 @@ import { ConnectionManager } from './connection-manager';
 import { SchemaBrowser } from './schema-browser';
 import { QueryExecutor } from './query-executor';
 import { FileManager } from './file-manager';
+import { importDataGripConnections } from './datagrip-import';
 
 export function registerIpcHandlers(
   connectionManager: ConnectionManager,
@@ -91,4 +92,7 @@ export function registerIpcHandlers(
   // Schema cache
   ipcMain.handle('schema:cache-load', () => fileManager.loadSchemaCache());
   ipcMain.handle('schema:cache-save', (_, cache) => fileManager.saveSchemaCache(cache));
+
+  // Import
+  ipcMain.handle('import:datagrip', () => importDataGripConnections());
 }
