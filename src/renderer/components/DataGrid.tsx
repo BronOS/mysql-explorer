@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useReactTable, getCoreRowModel, flexRender, ColumnDef } from '@tanstack/react-table';
 import { ColumnMeta } from '../../shared/types';
 import CellEditor from './CellEditor';
@@ -24,6 +24,8 @@ interface Props {
 export default function DataGrid({ columns, rows, primaryKey, saveMode, onCellSave, pendingChanges }: Props) {
   const [textModal, setTextModal] = useState<{ value: string; onSave: (v: string) => void } | null>(null);
   const [cellMenu, setCellMenu] = useState<CellContextMenu | null>(null);
+  const [menuPos, setMenuPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
+  const menuRef = useRef<HTMLDivElement>(null);
   const editable = primaryKey !== null;
 
   useEffect(() => {
@@ -31,6 +33,15 @@ export default function DataGrid({ columns, rows, primaryKey, saveMode, onCellSa
     window.addEventListener('click', handler);
     return () => window.removeEventListener('click', handler);
   }, []);
+
+  useLayoutEffect(() => {
+    if (cellMenu && menuRef.current) {
+      const rect = menuRef.current.getBoundingClientRect();
+      const left = cellMenu.x + rect.width > window.innerWidth ? window.innerWidth - rect.width - 4 : cellMenu.x;
+      const top = cellMenu.y + rect.height > window.innerHeight ? cellMenu.y - rect.height : cellMenu.y;
+      setMenuPos({ left, top });
+    }
+  }, [cellMenu]);
 
   const tableCols = useMemo<ColumnDef<Record<string, unknown>>[]>(() =>
     columns.map(col => ({
@@ -120,7 +131,7 @@ export default function DataGrid({ columns, rows, primaryKey, saveMode, onCellSa
       )}
 
       {cellMenu && (
-        <div className="context-menu" style={{ left: cellMenu.x, top: cellMenu.y }}>
+        <div ref={menuRef} className="context-menu" style={{ left: menuPos.left, top: menuPos.top }}>
           {cellMenu.column.nullable && (
             <div
               className="context-menu-item"
