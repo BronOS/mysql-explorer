@@ -17,6 +17,7 @@ export default function CellEditor({ value, column, editable, onSave, onOpenText
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const selectRef = useRef<HTMLSelectElement>(null);
 
   const isNull = value === null;
   const displayValue = isNull ? 'NULL' : String(value);
@@ -25,9 +26,10 @@ export default function CellEditor({ value, column, editable, onSave, onOpenText
   const isEnum = ENUM_TYPE.test(column.type);
 
   useEffect(() => {
-    if (editing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
+    if (editing) {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+      selectRef.current?.focus();
     }
   }, [editing]);
 
@@ -36,15 +38,28 @@ export default function CellEditor({ value, column, editable, onSave, onOpenText
   }
 
   if (isEnum && column.enumValues) {
+    if (editing) {
+      return (
+        <select
+          ref={selectRef}
+          className="select cell-select"
+          value={isNull ? '' : String(value)}
+          onChange={e => { onSave(e.target.value || null); setEditing(false); }}
+          onBlur={() => setEditing(false)}
+          onKeyDown={e => { if (e.key === 'Escape') setEditing(false); }}
+        >
+          {column.nullable && <option value="">NULL</option>}
+          {column.enumValues.map(v => <option key={v} value={v}>{v}</option>)}
+        </select>
+      );
+    }
     return (
-      <select
-        className="select cell-select"
-        value={isNull ? '' : String(value)}
-        onChange={e => onSave(e.target.value)}
+      <span
+        className={`cell-editable ${isNull ? 'cell-null' : ''}`}
+        onClick={() => setEditing(true)}
       >
-        {column.nullable && <option value="">NULL</option>}
-        {column.enumValues.map(v => <option key={v} value={v}>{v}</option>)}
-      </select>
+        {displayValue}
+      </span>
     );
   }
 
