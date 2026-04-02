@@ -290,7 +290,7 @@ export default function SqlConsole({ tab }: Props) {
             onChange={handleCodeChange}
             extensions={extensions}
             theme={oneDark}
-            height={`${dividerY - 36}px`}
+            height="100%"
             basicSetup={{ lineNumbers: true, foldGutter: true, autocompletion: true }}
           />
         </div>
