@@ -15,6 +15,7 @@ import Pagination from './Pagination';
 
 interface Props {
   tab: TabInfo;
+  isActive?: boolean;
 }
 
 const PAGE_SIZE = 1000;
@@ -113,7 +114,7 @@ function computeActiveDecorations(state: any): DecorationSet {
   return Decoration.set(decorations, true);
 }
 
-export default function SqlConsole({ tab }: Props) {
+export default function SqlConsole({ tab, isActive }: Props) {
   const ipc = useIpc();
   const { setStatus } = useAppContext();
   const { schema, dispatch } = useAppContext();
@@ -128,10 +129,12 @@ export default function SqlConsole({ tab }: Props) {
   const editorRef = useRef<ReactCodeMirrorRef>(null);
   const columnOnlyMode = useRef(false);
 
-  // Focus editor on mount
+  // Focus editor when tab becomes active
   useEffect(() => {
-    setTimeout(() => editorRef.current?.view?.focus(), 50);
-  }, []);
+    if (isActive) {
+      setTimeout(() => editorRef.current?.view?.focus(), 50);
+    }
+  }, [isActive]);
 
   // Fetch databases for this connection if not in schema yet
   useEffect(() => {
