@@ -18,37 +18,40 @@ interface Props {
 const PAGE_SIZE = 1000;
 
 /**
- * Find the query block the cursor is in by splitting on semicolons.
- * Returns { from, to, text } of the query containing the cursor position.
+ * Find the query block the cursor is in.
+ * Scans backwards and forwards from cursor to find surrounding semicolons,
+ * then returns the trimmed content between them.
  */
 function findQueryAtCursor(code: string, cursorPos: number): { from: number; to: number; text: string } {
-  // Split by semicolons, keeping track of positions
-  let offset = 0;
-  const blocks: { from: number; to: number; text: string }[] = [];
-  const parts = code.split(';');
+  if (!code.trim()) return { from: 0, to: code.length, text: '' };
 
-  for (let i = 0; i < parts.length; i++) {
-    const text = parts[i];
-    const from = offset;
-    const to = offset + text.length;
-    if (text.trim()) {
-      blocks.push({ from, to, text: text.trim() });
-    }
-    offset = to + 1; // +1 for the semicolon
-  }
-
-  if (blocks.length === 0) return { from: 0, to: code.length, text: code.trim() };
-
-  // Find which block contains the cursor
-  for (const block of blocks) {
-    // Include the semicolon in the range for matching
-    if (cursorPos >= block.from && cursorPos <= block.to + 1) {
-      return block;
+  // Find the start: scan backwards from cursor for ';' or start of string
+  let start = 0;
+  for (let i = cursorPos - 1; i >= 0; i--) {
+    if (code[i] === ';') {
+      start = i + 1;
+      break;
     }
   }
 
-  // Default to the last block
-  return blocks[blocks.length - 1];
+  // Find the end: scan forwards from cursor for ';' or end of string
+  let end = code.length;
+  for (let i = cursorPos; i < code.length; i++) {
+    if (code[i] === ';') {
+      end = i;
+      break;
+    }
+  }
+
+  const raw = code.slice(start, end);
+  const trimmed = raw.trim();
+  if (!trimmed) return { from: start, to: end, text: '' };
+
+  // Compute actual content boundaries for highlighting
+  const contentStart = start + raw.indexOf(trimmed);
+  const contentEnd = contentStart + trimmed.length;
+
+  return { from: contentStart, to: contentEnd, text: trimmed };
 }
 
 // Highlight the active query block — pure StateField, no effects/dispatch
