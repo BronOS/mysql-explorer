@@ -62,7 +62,7 @@ const activeQueryHighlight = StateField.define<DecorationSet>({
     return computeActiveDecorations(state);
   },
   update(deco, tr) {
-    if (tr.docChanged || tr.selectionSet) {
+    if (tr.docChanged || tr.selection) {
       return computeActiveDecorations(tr.state);
     }
     return deco;
