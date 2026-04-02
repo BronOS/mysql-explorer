@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ConnectionDialog from './ConnectionDialog';
 import { useAppContext } from '../context/app-context';
 import { useIpc } from '../hooks/use-ipc';
@@ -12,17 +12,22 @@ export default function Sidebar({ width }: { width: number }) {
   const [expandedDbs, setExpandedDbs] = useState<Set<string>>(new Set());
   const [connecting, setConnecting] = useState<Set<string>>(new Set());
   const [tableFilter, setTableFilter] = useState('');
+  const initialized = useRef(false);
 
   const { connections, schema, dispatch, openTab } = useAppContext();
   const ipc = useIpc();
 
-  // Persist expanded connections
+  // Persist expanded connections (skip initial render)
   useEffect(() => {
-    localStorage.setItem('expandedConns', JSON.stringify([...expandedConns]));
+    if (initialized.current) {
+      localStorage.setItem('expandedConns', JSON.stringify([...expandedConns]));
+    }
   }, [expandedConns]);
 
   useEffect(() => {
-    localStorage.setItem('expandedDbs', JSON.stringify([...expandedDbs]));
+    if (initialized.current) {
+      localStorage.setItem('expandedDbs', JSON.stringify([...expandedDbs]));
+    }
   }, [expandedDbs]);
 
   // Load connections and auto-reconnect previously expanded ones
@@ -66,6 +71,7 @@ export default function Sidebar({ width }: { width: number }) {
           }
         }
       } catch {}
+      initialized.current = true;
     };
     init();
 
