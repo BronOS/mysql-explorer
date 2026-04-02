@@ -11,7 +11,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .sidebar-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #888; flex: 1; }
 .sidebar-refresh { background: none; border: none; color: #888; cursor: pointer; font-size: 14px; padding: 2px 6px; border-radius: 3px; }
 .sidebar-refresh:hover { background: #0f3460; color: #00d2ff; }
-.sidebar-tree { flex: 1; overflow-y: auto; padding: 8px; }
+.sidebar-tree { flex: 1; overflow-y: overlay; padding: 8px; scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.sidebar-tree:hover { scrollbar-color: #0f3460 transparent; }
+.sidebar-tree::-webkit-scrollbar { width: 6px; }
+.sidebar-tree::-webkit-scrollbar-track { background: transparent; }
+.sidebar-tree::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; }
+.sidebar-tree:hover::-webkit-scrollbar-thumb { background: #0f3460; }
+.sidebar-tree::-webkit-scrollbar-thumb:hover { background: #00d2ff; }
 .add-connection-btn { width: 100%; padding: 8px; background: none; border: 1px dashed #0f3460; border-radius: 4px; color: #555; cursor: pointer; font-size: 11px; }
 .add-connection-btn:hover { border-color: #00d2ff; color: #00d2ff; }
 
