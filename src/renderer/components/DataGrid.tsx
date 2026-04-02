@@ -97,6 +97,7 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
   const headerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const [colWidths, setColWidths] = useState<number[]>([]);
+  const resizing = useRef<{ index: number; startX: number; startWidth: number } | null>(null);
 
   // Sync horizontal scroll between header and body
   const handleBodyScroll = () => {
@@ -105,8 +106,9 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
     }
   };
 
-  // Measure body column widths and apply to header
+  // Measure body column widths on first render
   useLayoutEffect(() => {
+    if (colWidths.length > 0) return; // don't override user-resized widths
     if (!bodyRef.current) return;
     const firstRow = bodyRef.current.querySelector('tr');
     if (!firstRow) return;
@@ -114,10 +116,51 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
     setColWidths(widths);
   }, [allRows, columns]);
 
+  // Column resize handlers
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!resizing.current) return;
+      const diff = e.clientX - resizing.current.startX;
+      const newWidth = Math.max(50, resizing.current.startWidth + diff);
+      setColWidths(prev => {
+        const next = [...prev];
+        next[resizing.current!.index] = newWidth;
+        return next;
+      });
+    };
+    const handleMouseUp = () => {
+      if (resizing.current) {
+        resizing.current = null;
+        document.body.style.cursor = '';
+      }
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
+  const startResize = (index: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    resizing.current = { index, startX: e.clientX, startWidth: colWidths[index] || 100 };
+    document.body.style.cursor = 'col-resize';
+  };
+
+  const totalWidth = colWidths.length ? colWidths.reduce((a, b) => a + b, 0) : undefined;
+  const colGroup = colWidths.length > 0 ? (
+    <colgroup>
+      {colWidths.map((w, i) => <col key={i} style={{ width: w, minWidth: w }} />)}
+    </colgroup>
+  ) : null;
+
   return (
     <>
       <div className="datagrid-header" ref={headerRef}>
-        <table className="datagrid" style={colWidths.length ? { width: colWidths.reduce((a, b) => a + b, 0) } : undefined}>
+        <table className="datagrid" style={totalWidth ? { width: totalWidth } : undefined}>
+          {colGroup}
           <thead>
             {table.getHeaderGroups().map(hg => (
               <tr key={hg.id}>
@@ -129,10 +172,10 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
                       key={h.id}
                       className={onSort ? 'th-sortable' : ''}
                       onClick={() => onSort?.(colId)}
-                      style={colWidths[h.index] ? { width: colWidths[h.index], minWidth: colWidths[h.index], maxWidth: colWidths[h.index] } : undefined}
                     >
                       {flexRender(h.column.columnDef.header, h.getContext())}
                       {sorted && <span className="sort-indicator">{orderBy!.direction === 'ASC' ? ' ▲' : ' ▼'}</span>}
+                      <span className="col-resize-handle" onMouseDown={(e) => startResize(h.index, e)} />
                     </th>
                   );
                 })}
@@ -142,7 +185,8 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
         </table>
       </div>
       <div className="datagrid-wrapper" ref={bodyRef} onScroll={handleBodyScroll}>
-        <table className="datagrid">
+        <table className="datagrid" style={totalWidth ? { width: totalWidth } : undefined}>
+          {colGroup}
           <tbody>
             {table.getRowModel().rows.map((row, rowIdx) => {
               const isDraft = '__draftId' in row.original;
