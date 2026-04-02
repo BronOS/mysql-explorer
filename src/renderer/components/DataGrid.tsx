@@ -200,7 +200,7 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
                     >
                       {flexRender(h.column.columnDef.header, h.getContext())}
                       {sorted && <span className="sort-indicator">{orderBy!.direction === 'ASC' ? ' ▲' : ' ▼'}</span>}
-                      <span className="col-resize-handle" onMouseDown={(e) => startResize(h.index, e)} onDoubleClick={(e) => autoFitColumn(h.index, e)} />
+                      <span className="col-resize-handle" onMouseDown={(e) => startResize(h.index, e)} onDoubleClick={(e) => autoFitColumn(h.index, e)} onClick={(e) => e.stopPropagation()} />
                     </th>
                   );
                 })}
