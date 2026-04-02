@@ -112,7 +112,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .datagrid-wrapper:hover::-webkit-scrollbar-thumb { background: #0f3460; }
 .datagrid-wrapper::-webkit-scrollbar-thumb:hover { background: #00d2ff; }
 .datagrid { width: 100%; border-collapse: collapse; font-size: 12px; }
-.datagrid thead th { padding: 8px 12px; text-align: left; color: #00d2ff; font-weight: 500; background: #0f3460; position: sticky; top: 0; z-index: 1; white-space: nowrap; }
+.datagrid thead th { padding: 8px 12px; text-align: left; color: #00d2ff; font-weight: 500; background: #0f3460; position: sticky; top: 0; z-index: 1; white-space: nowrap; user-select: none; }
+.th-sortable { cursor: pointer; }
+.th-sortable:hover { background: #163a6e; }
+.sort-indicator { font-size: 9px; opacity: 0.7; }
 .datagrid tbody tr { border-bottom: 1px solid #0f3460; }
 .datagrid tbody tr:nth-child(even) { background: #16213e; }
 .datagrid tbody td { padding: 6px 12px; white-space: nowrap; max-width: 300px; overflow: hidden; text-overflow: ellipsis; }

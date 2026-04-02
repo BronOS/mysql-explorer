@@ -19,9 +19,11 @@ interface Props {
   saveMode: 'auto' | 'bulk';
   onCellSave: (rowPkValue: unknown, column: string, value: unknown) => void;
   pendingChanges: Map<string, unknown>;
+  orderBy?: { column: string; direction: 'ASC' | 'DESC' } | null;
+  onSort?: (column: string) => void;
 }
 
-export default function DataGrid({ columns, rows, primaryKey, saveMode, onCellSave, pendingChanges }: Props) {
+export default function DataGrid({ columns, rows, primaryKey, saveMode, onCellSave, pendingChanges, orderBy, onSort }: Props) {
   const [textModal, setTextModal] = useState<{ value: string; onSave: (v: string) => void } | null>(null);
   const [cellMenu, setCellMenu] = useState<CellContextMenu | null>(null);
   const [menuPos, setMenuPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
@@ -81,9 +83,20 @@ export default function DataGrid({ columns, rows, primaryKey, saveMode, onCellSa
           <thead>
             {table.getHeaderGroups().map(hg => (
               <tr key={hg.id}>
-                {hg.headers.map(h => (
-                  <th key={h.id}>{flexRender(h.column.columnDef.header, h.getContext())}</th>
-                ))}
+                {hg.headers.map(h => {
+                  const colId = h.column.id;
+                  const sorted = orderBy?.column === colId;
+                  return (
+                    <th
+                      key={h.id}
+                      className={onSort ? 'th-sortable' : ''}
+                      onClick={() => onSort?.(colId)}
+                    >
+                      {flexRender(h.column.columnDef.header, h.getContext())}
+                      {sorted && <span className="sort-indicator">{orderBy!.direction === 'ASC' ? ' ▲' : ' ▼'}</span>}
+                    </th>
+                  );
+                })}
               </tr>
             ))}
           </thead>

@@ -18,12 +18,13 @@ export default function TableView({ tab }: Props) {
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const [where, setWhere] = useState('');
+  const [orderBy, setOrderBy] = useState<{ column: string; direction: 'ASC' | 'DESC' } | null>(null);
   const [saveMode, setSaveMode] = useState<'auto' | 'bulk'>(() => (localStorage.getItem('saveMode') as 'auto' | 'bulk') || 'auto');
   const [pendingChanges, setPendingChanges] = useState<Map<string, unknown>>(new Map());
   const [loading, setLoading] = useState(true);
   const [primaryKey, setPrimaryKey] = useState<string | null>(null);
 
-  const loadData = useCallback(async (pageNum: number, whereClause: string) => {
+  const loadData = useCallback(async (pageNum: number, whereClause: string, sort?: { column: string; direction: 'ASC' | 'DESC' } | null) => {
     setLoading(true);
     try {
       if (columns.length === 0) {
@@ -33,10 +34,12 @@ export default function TableView({ tab }: Props) {
         setPrimaryKey(pk ? pk.name : null);
       }
 
+      const sortClause = sort ? `\`${sort.column}\` ${sort.direction}` : undefined;
       const data = await ipc.queryPaginate(tab.connectionId, tab.database!, tab.table!, {
         page: pageNum,
         pageSize: PAGE_SIZE,
         where: whereClause || undefined,
+        orderBy: sortClause,
       });
 
       setRows(data.rows);
@@ -48,20 +51,35 @@ export default function TableView({ tab }: Props) {
   }, [tab.connectionId, tab.database, tab.table, columns.length]);
 
   useEffect(() => {
-    loadData(1, '');
+    loadData(1, '', null);
   }, [tab.connectionId, tab.database, tab.table]);
 
   const handlePageChange = (newPage: number) => {
-    loadData(newPage, where);
+    loadData(newPage, where, orderBy);
   };
 
   const handleFilterChange = (newWhere: string) => {
     setWhere(newWhere);
-    loadData(1, newWhere);
+    loadData(1, newWhere, orderBy);
   };
 
   const handleRefresh = () => {
-    loadData(page, where);
+    loadData(page, where, orderBy);
+  };
+
+  const handleSort = (column: string) => {
+    let newSort: { column: string; direction: 'ASC' | 'DESC' } | null;
+    if (orderBy?.column === column) {
+      if (orderBy.direction === 'ASC') {
+        newSort = { column, direction: 'DESC' };
+      } else {
+        newSort = null; // third click removes sort
+      }
+    } else {
+      newSort = { column, direction: 'ASC' };
+    }
+    setOrderBy(newSort);
+    loadData(1, where, newSort);
   };
 
   const handleCellSave = async (pkValue: unknown, column: string, value: unknown) => {
@@ -116,6 +134,8 @@ export default function TableView({ tab }: Props) {
           saveMode={saveMode}
           onCellSave={handleCellSave}
           pendingChanges={pendingChanges}
+          orderBy={orderBy}
+          onSort={handleSort}
         />
       )}
       {!loading && totalCount > 0 && (
