@@ -11,6 +11,7 @@ export default function Sidebar({ width }: { width: number }) {
   const [expandedConns, setExpandedConns] = useState<Set<string>>(new Set());
   const [expandedDbs, setExpandedDbs] = useState<Set<string>>(new Set());
   const [connecting, setConnecting] = useState<Set<string>>(new Set());
+  const [loadingDbs, setLoadingDbs] = useState<Set<string>>(new Set());
   const [tableFilter, setTableFilter] = useState('');
   const initialized = useRef(false);
 
@@ -187,15 +188,20 @@ export default function Sidebar({ width }: { width: number }) {
       return;
     }
 
-    const tables = await ipc.schemaTables(connectionId, dbName);
-    dispatch({ type: 'SET_TABLES', connectionId, database: dbName, tables });
-    setExpandedDbs(prev => new Set(prev).add(key));
+    setLoadingDbs(prev => new Set(prev).add(key));
+    try {
+      const tables = await ipc.schemaTables(connectionId, dbName);
+      dispatch({ type: 'SET_TABLES', connectionId, database: dbName, tables });
+      setExpandedDbs(prev => new Set(prev).add(key));
 
-    // Background prefetch all column names for autocomplete + persist
-    ipc.schemaAllColumns(connectionId, dbName, tables).then(async (columns: { [table: string]: string[] }) => {
-      dispatch({ type: 'SET_COLUMNS', connectionId, database: dbName, columns });
-      await persistSchema(connectionId, [{ name: dbName, tables, columns }]);
-    }).catch(() => {});
+      // Background prefetch all column names for autocomplete + persist
+      ipc.schemaAllColumns(connectionId, dbName, tables).then(async (columns: { [table: string]: string[] }) => {
+        dispatch({ type: 'SET_COLUMNS', connectionId, database: dbName, columns });
+        await persistSchema(connectionId, [{ name: dbName, tables, columns }]);
+      }).catch(() => {});
+    } finally {
+      setLoadingDbs(prev => { const s = new Set(prev); s.delete(key); return s; });
+    }
   };
 
   const handleTableClick = (conn: ConnectionConfig, database: string, table: string) => {
@@ -277,7 +283,7 @@ export default function Sidebar({ width }: { width: number }) {
             {expandedConns.has(conn.id) && schema[conn.id]?.databases.map(db => (
               <div key={db.name} className="tree-node-indent">
                 <div className="tree-node" onClick={() => toggleDatabase(conn.id, db.name)}>
-                  <span className="tree-arrow">{expandedDbs.has(`${conn.id}:${db.name}`) ? '▼' : '▶'}</span>
+                  <span className="tree-arrow">{loadingDbs.has(`${conn.id}:${db.name}`) ? '⏳' : expandedDbs.has(`${conn.id}:${db.name}`) ? '▼' : '▶'}</span>
                   <span>📁</span>
                   <span>{db.name}</span>
                 </div>
