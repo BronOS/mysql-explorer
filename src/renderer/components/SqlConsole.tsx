@@ -27,9 +27,30 @@ const PAGE_SIZE = 1000;
 function findQueryAtCursor(code: string, cursorPos: number): { from: number; to: number; text: string } {
   if (!code.trim()) return { from: 0, to: code.length, text: '' };
 
+  // If cursor is right after a ';' or on an empty/whitespace-only line between queries,
+  // treat it as belonging to the previous query
+  let adjustedPos = cursorPos;
+  if (adjustedPos > 0 && code[adjustedPos - 1] === ';') {
+    adjustedPos = adjustedPos - 1; // move before the semicolon
+  } else {
+    // Check if the current line is blank/whitespace-only
+    let lineStart = adjustedPos;
+    while (lineStart > 0 && code[lineStart - 1] !== '\n') lineStart--;
+    let lineEnd = adjustedPos;
+    while (lineEnd < code.length && code[lineEnd] !== '\n') lineEnd++;
+    const currentLine = code.slice(lineStart, lineEnd);
+
+    if (!currentLine.trim()) {
+      // On a blank line — find the previous semicolon and move before it
+      for (let i = adjustedPos - 1; i >= 0; i--) {
+        if (code[i] === ';') { adjustedPos = i; break; }
+      }
+    }
+  }
+
   // Find the region between surrounding semicolons
   let start = 0;
-  for (let i = cursorPos - 1; i >= 0; i--) {
+  for (let i = adjustedPos - 1; i >= 0; i--) {
     if (code[i] === ';') {
       start = i + 1;
       break;
@@ -37,7 +58,7 @@ function findQueryAtCursor(code: string, cursorPos: number): { from: number; to:
   }
 
   let end = code.length;
-  for (let i = cursorPos; i < code.length; i++) {
+  for (let i = adjustedPos; i < code.length; i++) {
     if (code[i] === ';') {
       end = i;
       break;
@@ -46,29 +67,7 @@ function findQueryAtCursor(code: string, cursorPos: number): { from: number; to:
 
   const raw = code.slice(start, end);
   const trimmed = raw.trim();
-
-  // If the current region is empty (cursor is on blank line or right after ';'),
-  // look back to the previous query
-  if (!trimmed) {
-    if (start > 0) {
-      // Find the previous semicolon (start - 1 is the ';' we stopped at)
-      let prevStart = 0;
-      for (let i = start - 2; i >= 0; i--) {
-        if (code[i] === ';') {
-          prevStart = i + 1;
-          break;
-        }
-      }
-      const prevRaw = code.slice(prevStart, start - 1); // exclude the ';'
-      const prevTrimmed = prevRaw.trim();
-      if (prevTrimmed) {
-        const contentStart = prevStart + prevRaw.indexOf(prevTrimmed);
-        const contentEnd = contentStart + prevTrimmed.length;
-        return { from: contentStart, to: contentEnd, text: prevTrimmed };
-      }
-    }
-    return { from: start, to: end, text: '' };
-  }
+  if (!trimmed) return { from: start, to: end, text: '' };
 
   // Compute actual content boundaries for highlighting
   const contentStart = start + raw.indexOf(trimmed);
