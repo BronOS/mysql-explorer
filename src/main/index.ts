@@ -1,17 +1,29 @@
 import { app, BrowserWindow } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
+import { FileManager } from './file-manager';
+import { ConnectionManager } from './connection-manager';
+import { SchemaBrowser } from './schema-browser';
+import { QueryExecutor } from './query-executor';
+import { registerIpcHandlers } from './ipc-handlers';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
   app.quit();
 }
 
+const fileManager = new FileManager(app.getPath('userData'));
+const connectionManager = new ConnectionManager(fileManager);
+const schemaBrowser = new SchemaBrowser();
+const queryExecutor = new QueryExecutor();
+
+registerIpcHandlers(connectionManager, schemaBrowser, queryExecutor, fileManager);
+
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1400,
+    height: 900,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
@@ -40,7 +52,7 @@ app.on('ready', createWindow);
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    app.quit();
+    connectionManager.disconnectAll().finally(() => app.quit());
   }
 });
 
