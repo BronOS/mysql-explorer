@@ -13,13 +13,13 @@ export default function TabBar() {
           className={`tab ${tab.id === activeTabId ? 'tab-active' : ''}`}
           onClick={() => setActiveTab(tab.id)}
         >
+          <span className="tab-close" onClick={(e) => { e.stopPropagation(); closeTab(tab.id); }}>✕</span>
           <span className="tab-badge" style={{ backgroundColor: tab.connectionColor + '22', color: tab.connectionColor }}>
             {tab.connectionName.slice(0, 4)}
           </span>
           <span className="tab-label">
             {tab.type === 'console' ? '⌨️ SQL Console' : `📋 ${tab.table}`}
           </span>
-          <span className="tab-close" onClick={(e) => { e.stopPropagation(); closeTab(tab.id); }}>✕</span>
         </div>
       ))}
     </div>
