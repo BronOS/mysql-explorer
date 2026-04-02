@@ -1,6 +1,7 @@
 import { useAppContext } from './context/app-context';
 import Sidebar from './components/Sidebar';
 import TabBar from './components/TabBar';
+import TableView from './components/TableView';
 
 export default function App() {
   const { tabs, activeTabId } = useAppContext();
@@ -15,9 +16,7 @@ export default function App() {
           {!activeTab && (
             <div className="empty-state">Select a table or open a SQL Console</div>
           )}
-          {activeTab?.type === 'table' && (
-            <div className="placeholder">Table View: {activeTab.database}.{activeTab.table}</div>
-          )}
+          {activeTab?.type === 'table' && <TableView tab={activeTab} />}
           {activeTab?.type === 'console' && (
             <div className="placeholder">SQL Console: {activeTab.connectionName}</div>
           )}
