@@ -43,6 +43,11 @@ export function registerIpcHandlers(
   });
 
   // Query
+  ipcMain.handle('query:use-database', async (_, connectionId, database) => {
+    const pool = connectionManager.getPool(connectionId);
+    await pool.query(`USE \`${database}\``);
+  });
+
   ipcMain.handle('query:execute', (_, connectionId, sql) => {
     const pool = connectionManager.getPool(connectionId);
     return queryExecutor.execute(pool, sql);

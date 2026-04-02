@@ -16,6 +16,7 @@ const electronAPI = {
   schemaDescribe: (connectionId: string, database: string, table: string) => ipcRenderer.invoke('schema:describe', connectionId, database, table),
 
   // Query
+  queryUseDatabase: (connectionId: string, database: string) => ipcRenderer.invoke('query:use-database', connectionId, database),
   queryExecute: (connectionId: string, sql: string) => ipcRenderer.invoke('query:execute', connectionId, sql),
   queryPaginate: (connectionId: string, database: string, table: string, opts: any) => ipcRenderer.invoke('query:paginate', connectionId, database, table, opts),
   queryUpdate: (connectionId: string, database: string, table: string, column: string, value: any, pkColumn: string, pkValue: any) =>

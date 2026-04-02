@@ -22,6 +22,7 @@ export default function SqlConsole({ tab }: Props) {
   const [result, setResult] = useState<QueryResult | null>(null);
   const [resultPage, setResultPage] = useState(1);
   const [running, setRunning] = useState(false);
+  const [selectedDb, setSelectedDb] = useState('');
   const [dividerY, setDividerY] = useState(250);
   const dragging = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -43,6 +44,11 @@ export default function SqlConsole({ tab }: Props) {
     debouncedSave(value);
   };
 
+  const handleDbChange = async (db: string) => {
+    setSelectedDb(db);
+    if (db) await ipc.queryUseDatabase(tab.connectionId, db);
+  };
+
   const handleRun = async () => {
     if (!code.trim()) return;
     setRunning(true);
@@ -59,12 +65,16 @@ export default function SqlConsole({ tab }: Props) {
     if (!connSchema) return {};
     const tables: Record<string, string[]> = {};
     for (const db of connSchema.databases) {
+      // Add database name as a table so it appears in suggestions
+      tables[db.name] = db.tables;
       for (const table of db.tables) {
         tables[table] = [];
       }
     }
     return tables;
   }, [schema, tab.connectionId]);
+
+  const databases = schema[tab.connectionId]?.databases.map(d => d.name) || [];
 
   // Resizer
   const handleMouseDown = () => { dragging.current = true; };
@@ -99,6 +109,15 @@ export default function SqlConsole({ tab }: Props) {
             {running ? '⏳ Running...' : '▶ Run'}
           </button>
           <span className="sql-shortcut">⌘+Enter</span>
+          <select
+            className="select"
+            value={selectedDb}
+            onChange={e => handleDbChange(e.target.value)}
+            style={{ marginLeft: 'auto', padding: '3px 8px', fontSize: 11 }}
+          >
+            <option value="">-- Select Database --</option>
+            {databases.map(db => <option key={db} value={db}>{db}</option>)}
+          </select>
         </div>
         <div className="sql-codemirror" onKeyDown={e => {
           if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); handleRun(); }
