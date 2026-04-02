@@ -25,9 +25,11 @@ interface Props {
   orderBy?: { column: string; direction: 'ASC' | 'DESC' } | null;
   onSort?: (column: string) => void;
   onDuplicateRow?: (row: Record<string, unknown>) => void;
+  onDeleteRow?: (pkValue: unknown) => void;
+  onDeleteDraftRow?: (draftId: string) => void;
 }
 
-export default function DataGrid({ columns, rows, draftRows = [], primaryKey, saveMode, onCellSave, pendingChanges, orderBy, onSort, onDuplicateRow }: Props) {
+export default function DataGrid({ columns, rows, draftRows = [], primaryKey, saveMode, onCellSave, pendingChanges, orderBy, onSort, onDuplicateRow, onDeleteRow, onDeleteDraftRow }: Props) {
   const [textModal, setTextModal] = useState<{ value: string; onSave: (v: string) => void } | null>(null);
   const [cellMenu, setCellMenu] = useState<CellContextMenu | null>(null);
   const [menuPos, setMenuPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
@@ -205,6 +207,30 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
               onClick={() => { onDuplicateRow(cellMenu.rowOriginal); setCellMenu(null); }}
             >
               Duplicate Row
+            </div>
+          )}
+          {cellMenu.isDraft && onDeleteDraftRow && (
+            <div
+              className="context-menu-item"
+              style={{ color: '#ef4444' }}
+              onClick={() => { onDeleteDraftRow(cellMenu.pkValue as string); setCellMenu(null); }}
+            >
+              Remove Draft Row
+            </div>
+          )}
+          {!cellMenu.isDraft && primaryKey && onDeleteRow && (
+            <div
+              className="context-menu-item"
+              style={{ color: '#ef4444' }}
+              onClick={() => {
+                const pkVal = cellMenu.rowOriginal[primaryKey!];
+                if (confirm(`Delete row where ${primaryKey} = ${pkVal}?`)) {
+                  onDeleteRow(pkVal);
+                }
+                setCellMenu(null);
+              }}
+            >
+              Delete Row
             </div>
           )}
         </div>

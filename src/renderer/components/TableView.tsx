@@ -167,6 +167,17 @@ export default function TableView({ tab }: Props) {
     setDraftRows(prev => [...prev, newRow]);
   };
 
+  const handleDeleteRow = async (pkValue: unknown) => {
+    if (!primaryKey) return;
+    await ipc.queryDeleteRow(tab.connectionId, tab.database!, tab.table!, primaryKey, pkValue);
+    setStatus('Row deleted', 'success');
+    handleRefresh();
+  };
+
+  const handleDeleteDraftRow = (draftId: string) => {
+    setDraftRows(prev => prev.filter(r => r.__draftId !== draftId));
+  };
+
   const handleDiscardDrafts = () => {
     setDraftRows([]);
     setPendingChanges(new Map());
@@ -209,6 +220,8 @@ export default function TableView({ tab }: Props) {
           orderBy={orderBy}
           onSort={handleSort}
           onDuplicateRow={handleDuplicateRow}
+          onDeleteRow={handleDeleteRow}
+          onDeleteDraftRow={handleDeleteDraftRow}
         />
       )}
       {!loading && totalCount > 0 && (

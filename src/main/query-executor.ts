@@ -101,6 +101,18 @@ export class QueryExecutor {
     return { affectedRows: totalAffected };
   }
 
+  async deleteRow(
+    pool: Pool,
+    database: string,
+    table: string,
+    pkColumn: string,
+    pkValue: unknown,
+  ): Promise<{ affectedRows: number }> {
+    const sql = `DELETE FROM \`${database}\`.\`${table}\` WHERE \`${pkColumn}\` = ? LIMIT 1`;
+    const [result] = await pool.query(sql, [pkValue]);
+    return { affectedRows: (result as any).affectedRows };
+  }
+
   async insertRows(
     pool: Pool,
     database: string,

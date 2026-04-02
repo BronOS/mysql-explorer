@@ -90,6 +90,11 @@ export function registerIpcHandlers(
     return queryExecutor.insertRows(pool, database, table, rows);
   });
 
+  ipcMain.handle('query:delete-row', async (_, connectionId, database, table, pkColumn, pkValue) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    return queryExecutor.deleteRow(pool, database, table, pkColumn, pkValue);
+  });
+
   // File
   ipcMain.handle('file:sql-load', (_, connectionId) => fileManager.loadSqlFile(connectionId));
   ipcMain.handle('file:sql-save', (_, connectionId, content) => fileManager.saveSqlFile(connectionId, content));
