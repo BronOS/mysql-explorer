@@ -1,5 +1,6 @@
 import { app, BrowserWindow } from 'electron';
 import path from 'node:path';
+import fs from 'node:fs';
 import started from 'electron-squirrel-startup';
 import { FileManager } from './file-manager';
 import { ConnectionManager } from './connection-manager';
@@ -19,15 +20,40 @@ const queryExecutor = new QueryExecutor();
 
 registerIpcHandlers(connectionManager, schemaBrowser, queryExecutor, fileManager);
 
+// Window state persistence
+const windowStatePath = path.join(app.getPath('userData'), 'window-state.json');
+
+function loadWindowState(): { x?: number; y?: number; width: number; height: number; maximized?: boolean } {
+  try {
+    const data = fs.readFileSync(windowStatePath, 'utf-8');
+    return JSON.parse(data);
+  } catch {
+    return { width: 1400, height: 900 };
+  }
+}
+
+function saveWindowState(win: BrowserWindow): void {
+  const maximized = win.isMaximized();
+  const bounds = win.getNormalBounds();
+  fs.writeFileSync(windowStatePath, JSON.stringify({ ...bounds, maximized }));
+}
+
 const createWindow = () => {
-  // Create the browser window.
+  const state = loadWindowState();
+
   const mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
+    x: state.x,
+    y: state.y,
+    width: state.width,
+    height: state.height,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
   });
+
+  if (state.maximized) mainWindow.maximize();
+
+  mainWindow.on('close', () => saveWindowState(mainWindow));
 
   // and load the index.html of the app.
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
