@@ -16,8 +16,59 @@ export default function Sidebar({ width }: { width: number }) {
   const { connections, schema, dispatch, openTab } = useAppContext();
   const ipc = useIpc();
 
+  // Persist expanded connections
   useEffect(() => {
-    loadConnections();
+    localStorage.setItem('expandedConns', JSON.stringify([...expandedConns]));
+  }, [expandedConns]);
+
+  useEffect(() => {
+    localStorage.setItem('expandedDbs', JSON.stringify([...expandedDbs]));
+  }, [expandedDbs]);
+
+  // Load connections and auto-reconnect previously expanded ones
+  useEffect(() => {
+    const init = async () => {
+      const conns = await ipc.connectionList();
+      dispatch({ type: 'SET_CONNECTIONS', connections: conns });
+
+      // Restore expanded connections
+      try {
+        const savedConns: string[] = JSON.parse(localStorage.getItem('expandedConns') || '[]');
+        const savedDbs: string[] = JSON.parse(localStorage.getItem('expandedDbs') || '[]');
+
+        for (const connId of savedConns) {
+          const conn = conns.find((c: ConnectionConfig) => c.id === connId);
+          if (!conn) continue;
+          setConnecting(prev => new Set(prev).add(connId));
+          try {
+            await ipc.connectionConnect(connId);
+            const dbs = await ipc.schemaDatabases(connId);
+            dispatch({
+              type: 'SET_SCHEMA',
+              connectionId: connId,
+              databases: dbs.map((name: string) => ({ name, tables: [], loaded: false })),
+              loaded: true,
+            });
+            setExpandedConns(prev => new Set(prev).add(connId));
+
+            // Restore expanded databases
+            for (const dbKey of savedDbs) {
+              if (!dbKey.startsWith(connId + ':')) continue;
+              const dbName = dbKey.split(':')[1];
+              const tables = await ipc.schemaTables(connId, dbName);
+              dispatch({ type: 'SET_TABLES', connectionId: connId, database: dbName, tables });
+              setExpandedDbs(prev => new Set(prev).add(dbKey));
+            }
+          } catch {
+            // Connection failed, skip silently
+          } finally {
+            setConnecting(prev => { const s = new Set(prev); s.delete(connId); return s; });
+          }
+        }
+      } catch {}
+    };
+    init();
+
     const handler = () => setContextMenu(null);
     window.addEventListener('click', handler);
     return () => window.removeEventListener('click', handler);

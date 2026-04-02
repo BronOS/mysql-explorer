@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useCallback } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
 import { TabInfo, ConnectionConfig, SchemaTree } from '../../shared/types';
 
 function randomId(): string {
@@ -6,6 +6,18 @@ function randomId(): string {
 }
 
 const MAX_TABS = 10;
+
+function loadPersistedTabs(): { tabs: TabInfo[]; activeTabId: string | null } {
+  try {
+    const data = typeof localStorage !== 'undefined' ? localStorage.getItem('tabState') : null;
+    if (data) return JSON.parse(data);
+  } catch {}
+  return { tabs: [], activeTabId: null };
+}
+
+function persistTabs(tabs: TabInfo[], activeTabId: string | null): void {
+  try { localStorage.setItem('tabState', JSON.stringify({ tabs, activeTabId })); } catch {}
+}
 
 interface AppState {
   connections: ConnectionConfig[];
@@ -91,12 +103,18 @@ interface AppContextValue extends AppState {
 const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
+  const persisted = loadPersistedTabs();
   const [state, dispatch] = useReducer(reducer, {
     connections: [],
-    tabs: [],
-    activeTabId: null,
+    tabs: persisted.tabs,
+    activeTabId: persisted.activeTabId,
     schema: {},
   });
+
+  // Persist tabs whenever they change
+  useEffect(() => {
+    persistTabs(state.tabs, state.activeTabId);
+  }, [state.tabs, state.activeTabId]);
 
   const openTab = useCallback((opts: Omit<TabInfo, 'id' | 'lastAccessed'>) => {
     const existing = state.tabs.find(t =>
