@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { sql, MySQL } from '@codemirror/lang-sql';
 import { oneDark } from '@codemirror/theme-one-dark';
+import { keymap } from '@codemirror/view';
 import { useIpc } from '../hooks/use-ipc';
 import { useDebounce } from '../hooks/use-debounce';
 import { useAppContext } from '../context/app-context';
@@ -87,6 +88,14 @@ export default function SqlConsole({ tab }: Props) {
 
   const databases = schema[tab.connectionId]?.databases.map(d => d.name) || [];
 
+  // Cmd/Ctrl+Enter keymap for CodeMirror
+  const handleRunRef = useRef(handleRun);
+  handleRunRef.current = handleRun;
+  const runKeymap = useMemo(() => keymap.of([{
+    key: 'Mod-Enter',
+    run: () => { handleRunRef.current(); return true; },
+  }]), []);
+
   // Resizer
   const handleMouseDown = () => { dragging.current = true; };
   useEffect(() => {
@@ -130,13 +139,11 @@ export default function SqlConsole({ tab }: Props) {
             {databases.map(db => <option key={db} value={db}>{db}</option>)}
           </select>
         </div>
-        <div className="sql-codemirror" onKeyDown={e => {
-          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); handleRun(); }
-        }}>
+        <div className="sql-codemirror">
           <CodeMirror
             value={code}
             onChange={handleCodeChange}
-            extensions={[sql({ dialect: MySQL, schema: completionSchema() })]}
+            extensions={[runKeymap, sql({ dialect: MySQL, schema: completionSchema() })]}
             theme={oneDark}
             height={`${dividerY - 36}px`}
             basicSetup={{ lineNumbers: true, foldGutter: true, autocompletion: true }}
