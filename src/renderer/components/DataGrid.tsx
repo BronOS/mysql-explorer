@@ -179,7 +179,7 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
     if (!bodyRef.current) return;
     const firstRow = bodyRef.current.querySelector('tbody tr');
     if (!firstRow) return;
-    const widths = Array.from(firstRow.children).map(td => (td as HTMLElement).offsetWidth);
+    const widths = Array.from(firstRow.children).slice(1).map(td => (td as HTMLElement).offsetWidth); // skip row number td
     if (widths.length > 0 && widths.some(w => w > 0)) {
       measured.current = true;
       setColWidths(widths);
@@ -264,10 +264,11 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
   };
 
   const hasWidths = colWidths.length > 0;
-  const totalWidth = hasWidths ? colWidths.reduce((a, b) => a + b, 0) : undefined;
+  const totalWidth = hasWidths ? 40 + colWidths.reduce((a, b) => a + b, 0) : undefined;
   const tableStyle = totalWidth ? { width: totalWidth, tableLayout: 'fixed' as const } : undefined;
   const colGroup = hasWidths ? (
     <colgroup>
+      <col style={{ width: 40 }} />
       {colWidths.map((w, i) => <col key={i} style={{ width: w }} />)}
     </colgroup>
   ) : null;
