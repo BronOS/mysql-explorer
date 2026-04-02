@@ -22,7 +22,7 @@ export default function SqlConsole({ tab }: Props) {
   const [result, setResult] = useState<QueryResult | null>(null);
   const [resultPage, setResultPage] = useState(1);
   const [running, setRunning] = useState(false);
-  const [selectedDb, setSelectedDb] = useState('');
+  const [selectedDb, setSelectedDb] = useState(() => localStorage.getItem(`consoleDb:${tab.connectionId}`) || '');
   const [dividerY, setDividerY] = useState(250);
   const dragging = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -46,8 +46,16 @@ export default function SqlConsole({ tab }: Props) {
 
   const handleDbChange = async (db: string) => {
     setSelectedDb(db);
+    localStorage.setItem(`consoleDb:${tab.connectionId}`, db);
     if (db) await ipc.queryUseDatabase(tab.connectionId, db);
   };
+
+  // Restore selected database on mount
+  useEffect(() => {
+    if (selectedDb) {
+      ipc.queryUseDatabase(tab.connectionId, selectedDb).catch(() => {});
+    }
+  }, [tab.connectionId]);
 
   const handleRun = async () => {
     if (!code.trim()) return;
