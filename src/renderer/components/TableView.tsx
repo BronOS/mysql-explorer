@@ -28,7 +28,8 @@ export default function TableView({ tab }: Props) {
   const [primaryKey, setPrimaryKey] = useState<string | null>(null);
 
   const loadData = useCallback(async (pageNum: number, whereClause: string, sort?: { column: string; direction: 'ASC' | 'DESC' } | null) => {
-    setLoading(true);
+    const isInitial = rows.length === 0 && columns.length === 0;
+    if (isInitial) setLoading(true);
     setStatus(`Loading ${tab.database}.${tab.table}...`, 'info');
     try {
       if (columns.length === 0) {
@@ -53,7 +54,7 @@ export default function TableView({ tab }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [tab.connectionId, tab.database, tab.table, columns.length]);
+  }, [tab.connectionId, tab.database, tab.table, columns.length, rows.length]);
 
   useEffect(() => {
     loadData(1, '', null);
