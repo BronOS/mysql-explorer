@@ -32,7 +32,7 @@ export default function CellEditor({ value, column, editable, onSave, onOpenText
   }, [editing]);
 
   if (!editable) {
-    return <span className={isNull ? 'cell-null' : ''}>{displayValue}</span>;
+    return <span className={`cell-readonly ${isNull ? 'cell-null' : ''}`}>{displayValue}</span>;
   }
 
   if (isEnum && column.enumValues) {
