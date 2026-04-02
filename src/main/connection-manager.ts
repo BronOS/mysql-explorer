@@ -96,6 +96,30 @@ export class ConnectionManager {
     return active.pool;
   }
 
+  async ensureConnected(connectionId: string): Promise<Pool> {
+    const active = this.active.get(connectionId);
+    if (active) {
+      // Test if connection is still alive
+      try {
+        const conn = await active.pool.getConnection();
+        conn.release();
+        return active.pool;
+      } catch {
+        // Connection is dead, clean up and reconnect
+        try { await active.pool.end(); } catch {}
+        active.sshServer?.close();
+        active.sshClient?.end();
+        this.active.delete(connectionId);
+      }
+    }
+
+    // Reconnect
+    const config = this.fileManager.loadConnections().find(c => c.id === connectionId);
+    if (!config) throw new Error(`Connection ${connectionId} not found in config`);
+    await this.connect(config);
+    return this.getPool(connectionId);
+  }
+
   isConnected(connectionId: string): boolean {
     return this.active.has(connectionId);
   }
@@ -145,6 +169,8 @@ export class ConnectionManager {
         port: config.sshPort || 22,
         username: config.sshUser,
         readyTimeout: 10000,
+        keepaliveInterval: 30000,
+        keepaliveCountMax: 3,
       };
 
       if (config.sshAuthType === 'key') {

@@ -27,44 +27,44 @@ export function registerIpcHandlers(
   ipcMain.handle('connection:disconnect', (_, id) => connectionManager.disconnect(id));
 
   // Schema
-  ipcMain.handle('schema:databases', (_, connectionId) => {
-    const pool = connectionManager.getPool(connectionId);
+  ipcMain.handle('schema:databases', async (_, connectionId) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
     return schemaBrowser.listDatabases(pool);
   });
 
-  ipcMain.handle('schema:tables', (_, connectionId, database) => {
-    const pool = connectionManager.getPool(connectionId);
+  ipcMain.handle('schema:tables', async (_, connectionId, database) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
     return schemaBrowser.listTables(pool, database);
   });
 
-  ipcMain.handle('schema:describe', (_, connectionId, database, table) => {
-    const pool = connectionManager.getPool(connectionId);
+  ipcMain.handle('schema:describe', async (_, connectionId, database, table) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
     return schemaBrowser.describeTable(pool, database, table);
   });
 
   // Query
   ipcMain.handle('query:use-database', async (_, connectionId, database) => {
-    const pool = connectionManager.getPool(connectionId);
+    const pool = await connectionManager.ensureConnected(connectionId);
     await pool.query(`USE \`${database}\``);
   });
 
-  ipcMain.handle('query:execute', (_, connectionId, sql) => {
-    const pool = connectionManager.getPool(connectionId);
+  ipcMain.handle('query:execute', async (_, connectionId, sql) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
     return queryExecutor.execute(pool, sql);
   });
 
-  ipcMain.handle('query:paginate', (_, connectionId, database, table, opts) => {
-    const pool = connectionManager.getPool(connectionId);
+  ipcMain.handle('query:paginate', async (_, connectionId, database, table, opts) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
     return queryExecutor.paginate(pool, database, table, opts);
   });
 
-  ipcMain.handle('query:update', (_, connectionId, database, table, column, value, pkColumn, pkValue) => {
-    const pool = connectionManager.getPool(connectionId);
+  ipcMain.handle('query:update', async (_, connectionId, database, table, column, value, pkColumn, pkValue) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
     return queryExecutor.updateCell(pool, database, table, column, value, pkColumn, pkValue);
   });
 
-  ipcMain.handle('query:bulk-update', (_, connectionId, database, table, pkColumn, changes) => {
-    const pool = connectionManager.getPool(connectionId);
+  ipcMain.handle('query:bulk-update', async (_, connectionId, database, table, pkColumn, changes) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
     return queryExecutor.bulkUpdate(pool, database, table, pkColumn, changes);
   });
 
