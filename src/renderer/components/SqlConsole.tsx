@@ -285,7 +285,8 @@ export default function SqlConsole({ tab }: Props) {
       const textBefore = line.text.slice(0, context.pos - line.from);
       if (TABLE_CONTEXT.test(textBefore)) return null;
 
-      // Detect if we're in SELECT column list (higher boost)
+      // Ctrl+Space (explicit) → columns on top; typing → normal boost
+      const isExplicit = context.explicit;
       const isSelectContext = SELECT_CONTEXT.test(textBefore);
 
       // Get current query block
@@ -314,7 +315,7 @@ export default function SqlConsole({ tab }: Props) {
               label: col,
               type: 'property',
               detail: ref.alias ? `${ref.name} (${ref.alias})` : ref.name,
-              boost: isSelectContext ? 2 : 1,
+              boost: isExplicit ? 99 : isSelectContext ? 2 : 1,
             });
           }
         }
@@ -326,7 +327,7 @@ export default function SqlConsole({ tab }: Props) {
           for (const col of cols) {
             if (!seen.has(col)) {
               seen.add(col);
-              completions.push({ label: col, type: 'property', detail: table });
+              completions.push({ label: col, type: 'property', detail: table, boost: isExplicit ? 99 : 0 });
             }
           }
         }
