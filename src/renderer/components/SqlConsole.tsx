@@ -122,7 +122,7 @@ export default function SqlConsole({ tab }: Props) {
   const [resultPage, setResultPage] = useState(1);
   const [running, setRunning] = useState(false);
   const [selectedDb, setSelectedDb] = useState(() => localStorage.getItem(`consoleDb:${tab.connectionId}`) || '');
-  const [dividerY, setDividerY] = useState(() => Number(localStorage.getItem(`consoleDivider:${tab.connectionId}`)) || 250);
+  const [dividerY, setDividerY] = useState(() => Number(localStorage.getItem(`consoleDivider`)) || 250);
   const dragging = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<ReactCodeMirrorRef>(null);
@@ -401,7 +401,7 @@ export default function SqlConsole({ tab }: Props) {
       setDividerY(y);
     };
     const handleMouseUp = () => {
-      if (dragging.current) localStorage.setItem(`consoleDivider:${tab.connectionId}`, String(dividerRef.current));
+      if (dragging.current) localStorage.setItem(`consoleDivider`, String(dividerRef.current));
       dragging.current = false;
     };
     window.addEventListener('mousemove', handleMouseMove);
