@@ -163,20 +163,33 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
     e.preventDefault();
     e.stopPropagation();
     if (!bodyRef.current || !headerRef.current) return;
-    // Measure max content width across all body rows for this column
-    const bodyCells = bodyRef.current.querySelectorAll(`tr td:nth-child(${index + 1})`);
-    const headerCell = headerRef.current.querySelector(`tr th:nth-child(${index + 1})`);
+
+    // Create off-screen measurement element
+    const measure = document.createElement('span');
+    measure.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;font-size:12px;font-family:inherit;padding:0;';
+    document.body.appendChild(measure);
+
     let maxWidth = 0;
-    // Temporarily remove width constraints to measure natural width
-    bodyCells.forEach(td => {
-      const el = td as HTMLElement;
-      const span = el.querySelector('span');
-      if (span) maxWidth = Math.max(maxWidth, span.scrollWidth + 24); // 24 = padding
-    });
+
+    // Measure header text
+    const headerCell = headerRef.current.querySelector(`tr th:nth-child(${index + 1})`);
     if (headerCell) {
-      maxWidth = Math.max(maxWidth, headerCell.scrollWidth + 24);
+      measure.textContent = headerCell.textContent || '';
+      maxWidth = Math.max(maxWidth, measure.offsetWidth);
     }
-    maxWidth = Math.max(50, maxWidth);
+
+    // Measure body cell texts
+    const bodyCells = bodyRef.current.querySelectorAll(`tbody tr td:nth-child(${index + 1})`);
+    bodyCells.forEach(td => {
+      measure.textContent = (td as HTMLElement).textContent || '';
+      maxWidth = Math.max(maxWidth, measure.offsetWidth);
+    });
+
+    document.body.removeChild(measure);
+
+    // Add padding (12px each side) + some breathing room
+    maxWidth = Math.max(50, maxWidth + 28);
+
     setColWidths(prev => {
       const next = [...prev];
       next[index] = maxWidth;
