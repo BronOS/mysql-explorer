@@ -106,15 +106,24 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
     }
   };
 
-  // Measure body column widths on first render
+  // Reset widths when columns change (different table opened)
+  const prevColCount = useRef(0);
   useLayoutEffect(() => {
-    if (colWidths.length > 0) return; // don't override user-resized widths
+    if (columns.length !== prevColCount.current) {
+      prevColCount.current = columns.length;
+      setColWidths([]); // reset so next effect measures fresh
+    }
+  }, [columns]);
+
+  // Measure body column widths when no widths set
+  useLayoutEffect(() => {
+    if (colWidths.length > 0) return;
     if (!bodyRef.current) return;
     const firstRow = bodyRef.current.querySelector('tr');
     if (!firstRow) return;
     const widths = Array.from(firstRow.children).map(td => (td as HTMLElement).offsetWidth);
-    setColWidths(widths);
-  }, [allRows, columns]);
+    if (widths.length > 0) setColWidths(widths);
+  }, [colWidths.length, allRows]);
 
   // Column resize handlers
   useEffect(() => {
