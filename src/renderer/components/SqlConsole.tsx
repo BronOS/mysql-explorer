@@ -247,6 +247,7 @@ export default function SqlConsole({ tab }: Props) {
   // Custom context-aware completion source
   const columnCompletionExt = useMemo(() => {
     const TABLE_CONTEXT = /\b(FROM|JOIN|INTO|UPDATE|TABLE)\s+\w*$/i;
+    const SELECT_CONTEXT = /\bSELECT\s+(?:DISTINCT\s+)?(?:[\w.*,\s`]+,\s*)?$/i;
 
     /**
      * Extract table references from a query string.
@@ -284,12 +285,15 @@ export default function SqlConsole({ tab }: Props) {
       const textBefore = line.text.slice(0, context.pos - line.from);
       if (TABLE_CONTEXT.test(textBefore)) return null;
 
+      // Detect if we're in SELECT column list (higher boost)
+      const isSelectContext = SELECT_CONTEXT.test(textBefore);
+
       // Get current query block
       const doc = context.state.doc.toString();
       const query = findQueryAtCursor(doc, context.pos);
       if (!query.text) return null;
 
-      // Extract table references from the query
+      // Extract table references from the FULL query (including parts after cursor)
       const tableRefs = extractTableRefs(query.text);
 
       let completions: Completion[];
@@ -310,7 +314,7 @@ export default function SqlConsole({ tab }: Props) {
               label: col,
               type: 'property',
               detail: ref.alias ? `${ref.name} (${ref.alias})` : ref.name,
-              boost: 1, // prioritize over SQL keywords
+              boost: isSelectContext ? 2 : 1,
             });
           }
         }
