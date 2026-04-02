@@ -136,8 +136,8 @@ export default function Sidebar({ width }: { width: number }) {
               onContextMenu={(e) => handleContextMenu(e, conn.id)}
             >
               <span className="tree-arrow">{connecting.has(conn.id) ? '⏳' : expandedConns.has(conn.id) ? '▼' : '▶'}</span>
-              <span>🔌</span>
-              <span>{conn.name}</span>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: conn.color, flexShrink: 0 }}></span>
+              <span style={{ color: conn.color }}>{conn.name}</span>
             </div>
 
             {expandedConns.has(conn.id) && schema[conn.id]?.databases.map(db => (
