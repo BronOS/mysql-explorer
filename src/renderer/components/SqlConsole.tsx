@@ -4,7 +4,7 @@ import { sql, MySQL } from '@codemirror/lang-sql';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { keymap, Decoration, DecorationSet, EditorView } from '@codemirror/view';
 import { Prec, StateField, EditorState } from '@codemirror/state';
-import { autocompletion, CompletionContext, CompletionResult, Completion } from '@codemirror/autocomplete';
+import { autocompletion, CompletionContext, CompletionResult, Completion, startCompletion, completionStatus } from '@codemirror/autocomplete';
 import { format as formatSql } from 'sql-formatter';
 import { useIpc } from '../hooks/use-ipc';
 import { useDebounce } from '../hooks/use-debounce';
@@ -105,6 +105,7 @@ export default function SqlConsole({ tab }: Props) {
   const dragging = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<ReactCodeMirrorRef>(null);
+  const columnOnlyMode = useRef(false);
 
   // Focus editor on mount
   useEffect(() => {
@@ -227,6 +228,7 @@ export default function SqlConsole({ tab }: Props) {
   const editorKeymaps = useMemo(() => Prec.highest(keymap.of([
     { key: 'Mod-Enter', run: () => { handleRunRef.current(); return true; } },
     { key: 'Mod-Shift-f', run: () => { handleFormatRef.current(); return true; } },
+    { key: 'Ctrl-Space', run: (view) => { columnOnlyMode.current = true; startCompletion(view); return true; } },
   ])), []);
 
   const schemaObj = completionSchema();
@@ -277,8 +279,11 @@ export default function SqlConsole({ tab }: Props) {
     }
 
     function completeColumns(context: CompletionContext): CompletionResult | null {
+      const isColumnOnly = columnOnlyMode.current;
+      if (isColumnOnly) columnOnlyMode.current = false; // reset after use
+
       const word = context.matchBefore(/\w+/);
-      if (!word && !context.explicit) return null;
+      if (!word && !context.explicit && !isColumnOnly) return null;
 
       // Check context from text before cursor (within the current query, not just current line)
       const doc = context.state.doc.toString();
@@ -287,11 +292,12 @@ export default function SqlConsole({ tab }: Props) {
 
       // If the last keyword before cursor is a table context, suggest tables not columns
       // But column contexts (SET, WHERE, etc.) override even if UPDATE appears earlier
-      const isColumnContext = COLUMN_CONTEXT.test(textBeforeCursor);
-      if (!isColumnContext && TABLE_CONTEXT.test(textBeforeCursor)) return null;
+      // Ctrl+Space always shows columns regardless of context
+      if (!isColumnOnly) {
+        const isColumnContext = COLUMN_CONTEXT.test(textBeforeCursor);
+        if (!isColumnContext && TABLE_CONTEXT.test(textBeforeCursor)) return null;
+      }
 
-      // Ctrl+Space (explicit) → columns on top; typing → normal boost
-      const isExplicit = context.explicit;
       const isSelectContext = /\bSELECT\b/i.test(textBeforeCursor) && !/\bFROM\b/i.test(textBeforeCursor);
 
       if (!queryBlock.text) return null;
@@ -317,7 +323,7 @@ export default function SqlConsole({ tab }: Props) {
               label: col,
               type: 'property',
               detail: ref.alias ? `${ref.name} (${ref.alias})` : ref.name,
-              boost: isExplicit ? 99 : isSelectContext ? 2 : 1,
+              boost: isColumnOnly ? 99 : isSelectContext ? 2 : 1,
             });
           }
         }
@@ -329,7 +335,7 @@ export default function SqlConsole({ tab }: Props) {
           for (const col of cols) {
             if (!seen.has(col)) {
               seen.add(col);
-              completions.push({ label: col, type: 'property', detail: table, boost: isExplicit ? 99 : 0 });
+              completions.push({ label: col, type: 'property', detail: table, boost: isColumnOnly ? 99 : 0 });
             }
           }
         }
@@ -338,7 +344,7 @@ export default function SqlConsole({ tab }: Props) {
       if (completions.length === 0) return null;
 
       return {
-        from: word.from,
+        from: word?.from ?? context.pos,
         options: completions,
         validFor: /^\w*$/,
       };
