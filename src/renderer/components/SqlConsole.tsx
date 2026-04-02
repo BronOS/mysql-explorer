@@ -3,6 +3,7 @@ import CodeMirror from '@uiw/react-codemirror';
 import { sql, MySQL } from '@codemirror/lang-sql';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { keymap } from '@codemirror/view';
+import { Prec } from '@codemirror/state';
 import { useIpc } from '../hooks/use-ipc';
 import { useDebounce } from '../hooks/use-debounce';
 import { useAppContext } from '../context/app-context';
@@ -91,10 +92,10 @@ export default function SqlConsole({ tab }: Props) {
   // Cmd/Ctrl+Enter keymap for CodeMirror
   const handleRunRef = useRef(handleRun);
   handleRunRef.current = handleRun;
-  const runKeymap = useMemo(() => keymap.of([{
+  const runKeymap = useMemo(() => Prec.highest(keymap.of([{
     key: 'Mod-Enter',
     run: () => { handleRunRef.current(); return true; },
-  }]), []);
+  }])), []);
 
   // Resizer
   const handleMouseDown = () => { dragging.current = true; };
