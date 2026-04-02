@@ -76,9 +76,11 @@ app.on('ready', createWindow);
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    connectionManager.disconnectAll().finally(() => app.quit());
-  }
+  connectionManager.disconnectAll().finally(() => app.quit());
+});
+
+app.on('before-quit', () => {
+  connectionManager.disconnectAll().catch(() => {});
 });
 
 app.on('activate', () => {
