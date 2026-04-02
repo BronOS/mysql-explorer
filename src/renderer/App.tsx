@@ -55,11 +55,15 @@ export default function App() {
       <div className="main-area">
         <TabBar />
         <div className="main-content">
-          {!activeTab && (
+          {tabs.length === 0 && (
             <div className="empty-state">Select a table or open a SQL Console</div>
           )}
-          {activeTab?.type === 'table' && <TableView tab={activeTab} />}
-          {activeTab?.type === 'console' && <SqlConsole tab={activeTab} />}
+          {tabs.map(tab => (
+            <div key={tab.id} className="tab-panel" style={{ display: tab.id === activeTabId ? 'flex' : 'none' }}>
+              {tab.type === 'table' && <TableView tab={tab} />}
+              {tab.type === 'console' && <SqlConsole tab={tab} />}
+            </div>
+          ))}
         </div>
       </div>
     </div>
