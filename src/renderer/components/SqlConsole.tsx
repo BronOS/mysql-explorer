@@ -3,7 +3,8 @@ import CodeMirror, { ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { sql, MySQL } from '@codemirror/lang-sql';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { keymap, Decoration, DecorationSet, EditorView } from '@codemirror/view';
-import { Prec, StateField } from '@codemirror/state';
+import { Prec, StateField, EditorState } from '@codemirror/state';
+import { autocompletion, CompletionContext, CompletionResult, Completion } from '@codemirror/autocomplete';
 import { format as formatSql } from 'sql-formatter';
 import { useIpc } from '../hooks/use-ipc';
 import { useDebounce } from '../hooks/use-debounce';
@@ -229,11 +230,56 @@ export default function SqlConsole({ tab }: Props) {
   ])), []);
 
   const schemaObj = completionSchema();
+
+  // Build column completions list from schema
+  const columnCompletions = useMemo((): Completion[] => {
+    const seen = new Set<string>();
+    const completions: Completion[] = [];
+    const connSchema = schema[tab.connectionId];
+    if (!connSchema) return completions;
+    for (const db of connSchema.databases) {
+      for (const [table, cols] of Object.entries(db.columns || {})) {
+        for (const col of cols) {
+          if (!seen.has(col)) {
+            seen.add(col);
+            completions.push({ label: col, type: 'property', detail: table });
+          }
+        }
+      }
+    }
+    return completions;
+  }, [schema, tab.connectionId]);
+
+  // Custom completion source for column names in SQL contexts
+  const columnCompletionExt = useMemo(() => {
+    const TABLE_CONTEXT = /\b(FROM|JOIN|INTO|UPDATE|TABLE)\s+\w*$/i;
+
+    function completeColumns(context: CompletionContext): CompletionResult | null {
+      const word = context.matchBefore(/\w+/);
+      if (!word && !context.explicit) return null;
+      if (columnCompletions.length === 0) return null;
+
+      // After FROM/JOIN/INTO/UPDATE/TABLE — let SQL plugin suggest tables instead
+      const line = context.state.doc.lineAt(context.pos);
+      const textBefore = line.text.slice(0, context.pos - line.from);
+      if (TABLE_CONTEXT.test(textBefore)) return null;
+
+      return {
+        from: word.from,
+        options: columnCompletions,
+        validFor: /^\w*$/,
+      };
+    }
+
+    return EditorState.languageData.of(() => [{ autocomplete: completeColumns }]);
+  }, [columnCompletions]);
+
   const extensions = useMemo(() => [
     editorKeymaps,
     activeQueryHighlight,
     sql({ dialect: MySQL, schema: schemaObj }),
-  ], [editorKeymaps, schemaObj]);
+    columnCompletionExt,
+  ], [editorKeymaps, schemaObj, columnCompletionExt]);
 
   // Resizer
   const dividerRef = useRef(dividerY);
