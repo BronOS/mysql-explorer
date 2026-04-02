@@ -256,6 +256,7 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
                     <td
                       key={cell.id}
                       className={isModified ? 'cell-modified' : ''}
+                      onClick={() => setSelectedRowIdx(rowIdx)}
                       onContextMenu={(e) => {
                         if (!colMeta) return;
                         if (!isDraft && !editable) return;
