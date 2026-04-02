@@ -127,6 +127,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .sql-editor { display: flex; flex-direction: column; overflow: hidden; }
 .sql-toolbar { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: #16213e; border-bottom: 1px solid #0f3460; }
 .sql-shortcut { color: #555; font-size: 10px; }
+.cm-active-query { background: rgba(0, 210, 255, 0.06); border-left: 2px solid #00d2ff; }
 .sql-codemirror { flex: 1; overflow: hidden; }
 .sql-codemirror .cm-editor { height: 100%; }
 .sql-resizer { height: 4px; background: #0f3460; cursor: row-resize; display: flex; align-items: center; justify-content: center; color: #555; font-size: 8px; user-select: none; }

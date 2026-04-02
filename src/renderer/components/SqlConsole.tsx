@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import CodeMirror from '@uiw/react-codemirror';
+import CodeMirror, { ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { sql, MySQL } from '@codemirror/lang-sql';
 import { oneDark } from '@codemirror/theme-one-dark';
-import { keymap } from '@codemirror/view';
-import { Prec } from '@codemirror/state';
+import { keymap, Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate } from '@codemirror/view';
+import { Prec, EditorState, StateField, StateEffect } from '@codemirror/state';
 import { useIpc } from '../hooks/use-ipc';
 import { useDebounce } from '../hooks/use-debounce';
 import { useAppContext } from '../context/app-context';
@@ -17,6 +17,69 @@ interface Props {
 
 const PAGE_SIZE = 1000;
 
+/**
+ * Find the query block the cursor is in by splitting on semicolons.
+ * Returns { from, to, text } of the query containing the cursor position.
+ */
+function findQueryAtCursor(code: string, cursorPos: number): { from: number; to: number; text: string } {
+  // Split by semicolons, keeping track of positions
+  let offset = 0;
+  const blocks: { from: number; to: number; text: string }[] = [];
+  const parts = code.split(';');
+
+  for (let i = 0; i < parts.length; i++) {
+    const text = parts[i];
+    const from = offset;
+    const to = offset + text.length;
+    if (text.trim()) {
+      blocks.push({ from, to, text: text.trim() });
+    }
+    offset = to + 1; // +1 for the semicolon
+  }
+
+  if (blocks.length === 0) return { from: 0, to: code.length, text: code.trim() };
+
+  // Find which block contains the cursor
+  for (const block of blocks) {
+    // Include the semicolon in the range for matching
+    if (cursorPos >= block.from && cursorPos <= block.to + 1) {
+      return block;
+    }
+  }
+
+  // Default to the last block
+  return blocks[blocks.length - 1];
+}
+
+// CodeMirror extension to highlight the active query block
+const setActiveQuery = StateEffect.define<{ from: number; to: number } | null>();
+
+const activeQueryField = StateField.define<DecorationSet>({
+  create() { return Decoration.none; },
+  update(deco, tr) {
+    for (const effect of tr.effects) {
+      if (effect.is(setActiveQuery)) {
+        if (!effect.value) return Decoration.none;
+        const { from, to } = effect.value;
+        const decorations: any[] = [];
+        // Find line range
+        const doc = tr.state.doc;
+        const startLine = doc.lineAt(from).number;
+        const endLine = doc.lineAt(Math.min(to, doc.length)).number;
+        for (let line = startLine; line <= endLine; line++) {
+          const lineObj = doc.line(line);
+          decorations.push(activeQueryMark.range(lineObj.from));
+        }
+        return Decoration.set(decorations);
+      }
+    }
+    return deco;
+  },
+  provide: f => EditorView.decorations.from(f),
+});
+
+const activeQueryMark = Decoration.line({ class: 'cm-active-query' });
+
 export default function SqlConsole({ tab }: Props) {
   const ipc = useIpc();
   const { schema } = useAppContext();
@@ -28,6 +91,7 @@ export default function SqlConsole({ tab }: Props) {
   const [dividerY, setDividerY] = useState(250);
   const dragging = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<ReactCodeMirrorRef>(null);
 
   // Load persisted SQL
   useEffect(() => {
@@ -59,14 +123,38 @@ export default function SqlConsole({ tab }: Props) {
     }
   }, [tab.connectionId]);
 
+  /**
+   * Get the SQL to run:
+   * 1. If there's a selection → run the selected text
+   * 2. If no selection → find the query at cursor position
+   */
+  const getQueryToRun = (): string | null => {
+    const view = editorRef.current?.view;
+    if (!view) return code.trim() || null;
+
+    const state = view.state;
+    const selection = state.selection.main;
+
+    // If there's a selection, use it
+    if (!selection.empty) {
+      return state.sliceDoc(selection.from, selection.to).trim() || null;
+    }
+
+    // No selection — find query at cursor
+    const cursorPos = selection.head;
+    const query = findQueryAtCursor(state.doc.toString(), cursorPos);
+    return query.text || null;
+  };
+
   const handleRun = async () => {
-    if (!code.trim()) return;
+    const queryToRun = getQueryToRun();
+    if (!queryToRun) return;
     setRunning(true);
     setResult(null);
     if (selectedDb) {
       await ipc.queryUseDatabase(tab.connectionId, selectedDb).catch(() => {});
     }
-    const res = await ipc.queryExecute(tab.connectionId, code);
+    const res = await ipc.queryExecute(tab.connectionId, queryToRun);
     setResult(res);
     setResultPage(1);
     setRunning(false);
@@ -78,7 +166,6 @@ export default function SqlConsole({ tab }: Props) {
     if (!connSchema) return {};
     const tables: Record<string, string[]> = {};
     for (const db of connSchema.databases) {
-      // Add database name as a table so it appears in suggestions
       tables[db.name] = db.tables;
       for (const table of db.tables) {
         tables[table] = [];
@@ -96,6 +183,28 @@ export default function SqlConsole({ tab }: Props) {
     key: 'Mod-Enter',
     run: () => { handleRunRef.current(); return true; },
   }])), []);
+
+  // Extension to update active query highlight on cursor move
+  const activeQueryUpdater = useMemo(() => EditorView.updateListener.of((update: ViewUpdate) => {
+    if (update.selectionSet || update.docChanged) {
+      const state = update.state;
+      const selection = state.selection.main;
+
+      if (!selection.empty) {
+        // Selection exists — no query highlight needed
+        update.view.dispatch({ effects: setActiveQuery.of(null) });
+        return;
+      }
+
+      const cursorPos = selection.head;
+      const query = findQueryAtCursor(state.doc.toString(), cursorPos);
+      if (query.text) {
+        update.view.dispatch({ effects: setActiveQuery.of({ from: query.from, to: query.to }) });
+      } else {
+        update.view.dispatch({ effects: setActiveQuery.of(null) });
+      }
+    }
+  }), []);
 
   // Resizer
   const handleMouseDown = () => { dragging.current = true; };
@@ -142,9 +251,10 @@ export default function SqlConsole({ tab }: Props) {
         </div>
         <div className="sql-codemirror">
           <CodeMirror
+            ref={editorRef}
             value={code}
             onChange={handleCodeChange}
-            extensions={[runKeymap, sql({ dialect: MySQL, schema: completionSchema() })]}
+            extensions={[runKeymap, activeQueryField, activeQueryUpdater, sql({ dialect: MySQL, schema: completionSchema() })]}
             theme={oneDark}
             height={`${dividerY - 36}px`}
             basicSetup={{ lineNumbers: true, foldGutter: true, autocompletion: true }}
