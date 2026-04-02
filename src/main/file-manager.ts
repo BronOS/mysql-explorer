@@ -39,4 +39,21 @@ export class FileManager {
   saveSqlFile(connectionId: string, content: string): void {
     fs.writeFileSync(this.sqlFilePath(connectionId), content);
   }
+
+  private get schemaCachePath(): string {
+    return path.join(this.basePath, 'schema-cache.json');
+  }
+
+  loadSchemaCache(): Record<string, any> {
+    if (!fs.existsSync(this.schemaCachePath)) return {};
+    try {
+      return JSON.parse(fs.readFileSync(this.schemaCachePath, 'utf-8'));
+    } catch {
+      return {};
+    }
+  }
+
+  saveSchemaCache(cache: Record<string, any>): void {
+    fs.writeFileSync(this.schemaCachePath, JSON.stringify(cache));
+  }
 }

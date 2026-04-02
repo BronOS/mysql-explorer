@@ -87,4 +87,8 @@ export function registerIpcHandlers(
   // File
   ipcMain.handle('file:sql-load', (_, connectionId) => fileManager.loadSqlFile(connectionId));
   ipcMain.handle('file:sql-save', (_, connectionId, content) => fileManager.saveSqlFile(connectionId, content));
+
+  // Schema cache
+  ipcMain.handle('schema:cache-load', () => fileManager.loadSchemaCache());
+  ipcMain.handle('schema:cache-save', (_, cache) => fileManager.saveSchemaCache(cache));
 }

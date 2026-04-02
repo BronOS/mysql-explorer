@@ -30,51 +30,106 @@ export default function Sidebar({ width }: { width: number }) {
     }
   }, [expandedDbs]);
 
-  // Load connections and auto-reconnect previously expanded ones
+  // Helper: persist current schema to disk
+  const persistSchema = async (connId: string, databases: { name: string; tables: string[]; columns: { [t: string]: string[] } }[]) => {
+    try {
+      const cache = await ipc.schemaCacheLoad();
+      cache[connId] = { databases, timestamp: Date.now() };
+      await ipc.schemaCacheSave(cache);
+    } catch {}
+  };
+
+  // Load connections, restore from cache immediately, then refresh in background
   useEffect(() => {
     const init = async () => {
       const conns = await ipc.connectionList();
       dispatch({ type: 'SET_CONNECTIONS', connections: conns });
 
-      // Restore expanded connections
-      try {
-        const savedConns: string[] = JSON.parse(localStorage.getItem('expandedConns') || '[]');
-        const savedDbs: string[] = JSON.parse(localStorage.getItem('expandedDbs') || '[]');
+      const savedConns: string[] = JSON.parse(localStorage.getItem('expandedConns') || '[]');
+      const savedDbs: string[] = JSON.parse(localStorage.getItem('expandedDbs') || '[]');
 
-        for (const connId of savedConns) {
-          const conn = conns.find((c: ConnectionConfig) => c.id === connId);
-          if (!conn) continue;
-          setConnecting(prev => new Set(prev).add(connId));
+      // Step 1: Load cached schema instantly (no network)
+      let cache: Record<string, any> = {};
+      try { cache = await ipc.schemaCacheLoad(); } catch {}
+
+      for (const connId of savedConns) {
+        const conn = conns.find((c: ConnectionConfig) => c.id === connId);
+        if (!conn) continue;
+
+        // Restore from cache immediately
+        const cached = cache[connId];
+        if (cached?.databases) {
+          dispatch({
+            type: 'SET_SCHEMA',
+            connectionId: connId,
+            databases: cached.databases.map((db: any) => ({
+              name: db.name,
+              tables: db.tables || [],
+              columns: db.columns || {},
+              loaded: db.tables?.length > 0,
+            })),
+            loaded: true,
+          });
+          setExpandedConns(prev => new Set(prev).add(connId));
+          for (const dbKey of savedDbs) {
+            if (dbKey.startsWith(connId + ':')) {
+              setExpandedDbs(prev => new Set(prev).add(dbKey));
+            }
+          }
+          // Also restore columns from cache
+          for (const db of cached.databases) {
+            if (db.columns && Object.keys(db.columns).length > 0) {
+              dispatch({ type: 'SET_COLUMNS', connectionId: connId, database: db.name, columns: db.columns });
+            }
+          }
+        }
+
+        // Step 2: Background refresh — connect and fetch fresh data
+        setConnecting(prev => new Set(prev).add(connId));
+        (async () => {
           try {
             await ipc.connectionConnect(connId);
-            const dbs = await ipc.schemaDatabases(connId);
+            const freshDbs = await ipc.schemaDatabases(connId);
+            const freshDbData: { name: string; tables: string[]; columns: { [t: string]: string[] } }[] = [];
+
             dispatch({
               type: 'SET_SCHEMA',
               connectionId: connId,
-              databases: dbs.map((name: string) => ({ name, tables: [], columns: {}, loaded: false })),
+              databases: freshDbs.map((name: string) => {
+                // Keep existing cached columns while refreshing
+                const cachedDb = cached?.databases?.find((d: any) => d.name === name);
+                return { name, tables: cachedDb?.tables || [], columns: cachedDb?.columns || {}, loaded: false };
+              }),
               loaded: true,
             });
             setExpandedConns(prev => new Set(prev).add(connId));
 
-            // Restore expanded databases
             for (const dbKey of savedDbs) {
               if (!dbKey.startsWith(connId + ':')) continue;
               const dbName = dbKey.split(':')[1];
+              if (!freshDbs.includes(dbName)) continue;
+
               const tables = await ipc.schemaTables(connId, dbName);
               dispatch({ type: 'SET_TABLES', connectionId: connId, database: dbName, tables });
               setExpandedDbs(prev => new Set(prev).add(dbKey));
-              // Background prefetch columns
-              ipc.schemaAllColumns(connId, dbName, tables).then((columns: { [table: string]: string[] }) => {
-                dispatch({ type: 'SET_COLUMNS', connectionId: connId, database: dbName, columns });
-              }).catch(() => {});
+
+              // Fetch columns in background
+              const columns = await ipc.schemaAllColumns(connId, dbName, tables).catch(() => ({}));
+              dispatch({ type: 'SET_COLUMNS', connectionId: connId, database: dbName, columns });
+
+              freshDbData.push({ name: dbName, tables, columns });
             }
+
+            // Persist fresh data to cache
+            await persistSchema(connId, freshDbData);
           } catch {
-            // Connection failed, skip silently
+            // Connection failed — cached data still in use
           } finally {
             setConnecting(prev => { const s = new Set(prev); s.delete(connId); return s; });
           }
-        }
-      } catch {}
+        })();
+      }
+
       initialized.current = true;
     };
     init();
@@ -136,9 +191,10 @@ export default function Sidebar({ width }: { width: number }) {
     dispatch({ type: 'SET_TABLES', connectionId, database: dbName, tables });
     setExpandedDbs(prev => new Set(prev).add(key));
 
-    // Background prefetch all column names for autocomplete
-    ipc.schemaAllColumns(connectionId, dbName, tables).then((columns: { [table: string]: string[] }) => {
+    // Background prefetch all column names for autocomplete + persist
+    ipc.schemaAllColumns(connectionId, dbName, tables).then(async (columns: { [table: string]: string[] }) => {
       dispatch({ type: 'SET_COLUMNS', connectionId, database: dbName, columns });
+      await persistSchema(connectionId, [{ name: dbName, tables, columns }]);
     }).catch(() => {});
   };
 

@@ -28,6 +28,10 @@ const electronAPI = {
   // File
   sqlFileLoad: (connectionId: string) => ipcRenderer.invoke('file:sql-load', connectionId),
   sqlFileSave: (connectionId: string, content: string) => ipcRenderer.invoke('file:sql-save', connectionId, content),
+
+  // Schema cache
+  schemaCacheLoad: () => ipcRenderer.invoke('schema:cache-load'),
+  schemaCacheSave: (cache: any) => ipcRenderer.invoke('schema:cache-save', cache),
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);
