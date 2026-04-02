@@ -94,9 +94,19 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
     getCoreRowModel: getCoreRowModel(),
   });
 
+  const headerRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  // Sync horizontal scroll between header and body
+  const handleBodyScroll = () => {
+    if (headerRef.current && bodyRef.current) {
+      headerRef.current.scrollLeft = bodyRef.current.scrollLeft;
+    }
+  };
+
   return (
     <>
-      <div className="datagrid-wrapper">
+      <div className="datagrid-header" ref={headerRef}>
         <table className="datagrid">
           <thead>
             {table.getHeaderGroups().map(hg => (
@@ -118,6 +128,10 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
               </tr>
             ))}
           </thead>
+        </table>
+      </div>
+      <div className="datagrid-wrapper" ref={bodyRef} onScroll={handleBodyScroll}>
+        <table className="datagrid">
           <tbody>
             {table.getRowModel().rows.map((row, rowIdx) => {
               const isDraft = '__draftId' in row.original;
