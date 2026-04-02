@@ -15,7 +15,17 @@ export function registerIpcHandlers(
   ipcMain.handle('connection:create', (_, config) => connectionManager.createConnection(config));
   ipcMain.handle('connection:update', (_, id, updates) => connectionManager.updateConnection(id, updates));
   ipcMain.handle('connection:delete', (_, id) => connectionManager.deleteConnection(id));
-  ipcMain.handle('connection:test', (_, config) => connectionManager.testConnection(config));
+  ipcMain.handle('connection:test', async (_, config) => {
+    console.log('[IPC] connection:test called', { host: config.host, sshEnabled: config.sshEnabled, sshHost: config.sshHost, sshAuthType: config.sshAuthType, sshKeyPath: config.sshKeyPath });
+    try {
+      const result = await connectionManager.testConnection(config);
+      console.log('[IPC] connection:test result', result);
+      return result;
+    } catch (err: any) {
+      console.error('[IPC] connection:test error', err);
+      return { success: false, error: err.message };
+    }
+  });
 
   ipcMain.handle('connection:connect', async (_, id) => {
     const conns = connectionManager.listConnections();
