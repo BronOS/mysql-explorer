@@ -4,6 +4,7 @@ import { sql, MySQL } from '@codemirror/lang-sql';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { keymap, Decoration, DecorationSet, EditorView } from '@codemirror/view';
 import { Prec, StateField } from '@codemirror/state';
+import { format as formatSql } from 'sql-formatter';
 import { useIpc } from '../hooks/use-ipc';
 import { useDebounce } from '../hooks/use-debounce';
 import { useAppContext } from '../context/app-context';
@@ -176,6 +177,27 @@ export default function SqlConsole({ tab }: Props) {
     setRunning(false);
   };
 
+  const handleFormat = () => {
+    const view = editorRef.current?.view;
+    if (!view) return;
+
+    const state = view.state;
+    const selection = state.selection.main;
+
+    try {
+      if (!selection.empty) {
+        // Format only selected text
+        const selected = state.sliceDoc(selection.from, selection.to);
+        const formatted = formatSql(selected, { language: 'mysql', tabWidth: 2, keywordCase: 'upper' });
+        view.dispatch({ changes: { from: selection.from, to: selection.to, insert: formatted } });
+      } else {
+        // Format entire editor
+        const formatted = formatSql(code, { language: 'mysql', tabWidth: 2, keywordCase: 'upper' });
+        handleCodeChange(formatted);
+      }
+    } catch {}
+  };
+
   // Build autocomplete schema from sidebar data
   const completionSchema = useCallback(() => {
     const connSchema = schema[tab.connectionId];
@@ -192,20 +214,22 @@ export default function SqlConsole({ tab }: Props) {
 
   const databases = schema[tab.connectionId]?.databases.map(d => d.name) || [];
 
-  // Cmd/Ctrl+Enter keymap for CodeMirror
+  // Keymaps for CodeMirror
   const handleRunRef = useRef(handleRun);
   handleRunRef.current = handleRun;
-  const runKeymap = useMemo(() => Prec.highest(keymap.of([{
-    key: 'Mod-Enter',
-    run: () => { handleRunRef.current(); return true; },
-  }])), []);
+  const handleFormatRef = useRef(handleFormat);
+  handleFormatRef.current = handleFormat;
+  const editorKeymaps = useMemo(() => Prec.highest(keymap.of([
+    { key: 'Mod-Enter', run: () => { handleRunRef.current(); return true; } },
+    { key: 'Mod-Shift-f', run: () => { handleFormatRef.current(); return true; } },
+  ])), []);
 
   const schemaObj = completionSchema();
   const extensions = useMemo(() => [
-    runKeymap,
+    editorKeymaps,
     activeQueryHighlight,
     sql({ dialect: MySQL, schema: schemaObj }),
-  ], [runKeymap, schemaObj]);
+  ], [editorKeymaps, schemaObj]);
 
   // Resizer
   const dividerRef = useRef(dividerY);
@@ -245,6 +269,10 @@ export default function SqlConsole({ tab }: Props) {
             {running ? '⏳ Running...' : '▶ Run'}
           </button>
           <span className="sql-shortcut">⌘+Enter</span>
+          <button className="btn btn-secondary" onClick={handleFormat} style={{ marginLeft: 8 }}>
+            Format
+          </button>
+          <span className="sql-shortcut">⌘+⇧+F</span>
           <select
             className="select"
             value={selectedDb}
