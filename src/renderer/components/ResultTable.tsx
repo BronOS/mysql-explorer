@@ -38,9 +38,9 @@ export default function ResultTable({ columns, rows }: Props) {
             <tr key={row.id}>
               {row.getVisibleCells().map(cell => (
                 <td key={cell.id}>
-                  {cell.getValue() === null
-                    ? <span className="cell-null">NULL</span>
-                    : String(cell.getValue())}
+                  <span className={`cell-readonly ${cell.getValue() === null ? 'cell-null' : ''}`}>
+                    {cell.getValue() === null ? 'NULL' : String(cell.getValue())}
+                  </span>
                 </td>
               ))}
             </tr>
