@@ -96,6 +96,7 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
 
   const headerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const [colWidths, setColWidths] = useState<number[]>([]);
 
   // Sync horizontal scroll between header and body
   const handleBodyScroll = () => {
@@ -104,10 +105,19 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
     }
   };
 
+  // Measure body column widths and apply to header
+  useLayoutEffect(() => {
+    if (!bodyRef.current) return;
+    const firstRow = bodyRef.current.querySelector('tr');
+    if (!firstRow) return;
+    const widths = Array.from(firstRow.children).map(td => (td as HTMLElement).offsetWidth);
+    setColWidths(widths);
+  }, [allRows, columns]);
+
   return (
     <>
       <div className="datagrid-header" ref={headerRef}>
-        <table className="datagrid">
+        <table className="datagrid" style={colWidths.length ? { width: colWidths.reduce((a, b) => a + b, 0) } : undefined}>
           <thead>
             {table.getHeaderGroups().map(hg => (
               <tr key={hg.id}>
@@ -119,6 +129,7 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
                       key={h.id}
                       className={onSort ? 'th-sortable' : ''}
                       onClick={() => onSort?.(colId)}
+                      style={colWidths[h.index] ? { width: colWidths[h.index], minWidth: colWidths[h.index], maxWidth: colWidths[h.index] } : undefined}
                     >
                       {flexRender(h.column.columnDef.header, h.getContext())}
                       {sorted && <span className="sort-indicator">{orderBy!.direction === 'ASC' ? ' ▲' : ' ▼'}</span>}
