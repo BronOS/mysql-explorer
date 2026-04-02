@@ -150,7 +150,7 @@ export default function Sidebar({ width }: { width: number }) {
 
                 {expandedDbs.has(`${conn.id}:${db.name}`) && db.tables.map(table => (
                   <div key={table} className="tree-node-indent">
-                    <div className="tree-node" onClick={() => handleTableClick(conn, db.name, table)}>
+                    <div className="tree-node" onClick={() => handleTableClick(conn, db.name, table)} title={table}>
                       <span style={{ width: 12 }}></span>
                       <span>📋</span>
                       <span>{table}</span>
