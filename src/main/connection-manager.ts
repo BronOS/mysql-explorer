@@ -72,6 +72,7 @@ export class ConnectionManager {
       connectionLimit: 5,
       waitForConnections: true,
       connectTimeout: 10000,
+      multipleStatements: true,
     });
 
     // Verify the connection works
