@@ -116,7 +116,7 @@ function computeActiveDecorations(state: any): DecorationSet {
 export default function SqlConsole({ tab }: Props) {
   const ipc = useIpc();
   const { setStatus } = useAppContext();
-  const { schema } = useAppContext();
+  const { schema, dispatch } = useAppContext();
   const [code, setCode] = useState('');
   const [result, setResult] = useState<QueryResult | null>(null);
   const [resultPage, setResultPage] = useState(1);
@@ -132,6 +132,20 @@ export default function SqlConsole({ tab }: Props) {
   useEffect(() => {
     setTimeout(() => editorRef.current?.view?.focus(), 50);
   }, []);
+
+  // Fetch databases for this connection if not in schema yet
+  useEffect(() => {
+    const connSchema = schema[tab.connectionId];
+    if (connSchema?.loaded) return;
+    ipc.schemaDatabases(tab.connectionId).then((dbs: string[]) => {
+      dispatch({
+        type: 'SET_SCHEMA',
+        connectionId: tab.connectionId,
+        databases: dbs.map(name => ({ name, tables: [], columns: {}, loaded: false })),
+        loaded: true,
+      });
+    }).catch(() => {});
+  }, [tab.connectionId, schema[tab.connectionId]?.loaded]);
 
   // Load persisted SQL
   useEffect(() => {
