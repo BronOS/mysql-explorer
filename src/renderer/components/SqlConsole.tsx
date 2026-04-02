@@ -27,7 +27,7 @@ const PAGE_SIZE = 1000;
 function findQueryAtCursor(code: string, cursorPos: number): { from: number; to: number; text: string } {
   if (!code.trim()) return { from: 0, to: code.length, text: '' };
 
-  // Find the start: scan backwards from cursor for ';' or start of string
+  // Find the region between surrounding semicolons
   let start = 0;
   for (let i = cursorPos - 1; i >= 0; i--) {
     if (code[i] === ';') {
@@ -36,7 +36,6 @@ function findQueryAtCursor(code: string, cursorPos: number): { from: number; to:
     }
   }
 
-  // Find the end: scan forwards from cursor for ';' or end of string
   let end = code.length;
   for (let i = cursorPos; i < code.length; i++) {
     if (code[i] === ';') {
@@ -47,7 +46,29 @@ function findQueryAtCursor(code: string, cursorPos: number): { from: number; to:
 
   const raw = code.slice(start, end);
   const trimmed = raw.trim();
-  if (!trimmed) return { from: start, to: end, text: '' };
+
+  // If the current region is empty (cursor is on blank line or right after ';'),
+  // look back to the previous query
+  if (!trimmed) {
+    if (start > 0) {
+      // Find the previous semicolon (start - 1 is the ';' we stopped at)
+      let prevStart = 0;
+      for (let i = start - 2; i >= 0; i--) {
+        if (code[i] === ';') {
+          prevStart = i + 1;
+          break;
+        }
+      }
+      const prevRaw = code.slice(prevStart, start - 1); // exclude the ';'
+      const prevTrimmed = prevRaw.trim();
+      if (prevTrimmed) {
+        const contentStart = prevStart + prevRaw.indexOf(prevTrimmed);
+        const contentEnd = contentStart + prevTrimmed.length;
+        return { from: contentStart, to: contentEnd, text: prevTrimmed };
+      }
+    }
+    return { from: start, to: end, text: '' };
+  }
 
   // Compute actual content boundaries for highlighting
   const contentStart = start + raw.indexOf(trimmed);
