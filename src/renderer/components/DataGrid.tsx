@@ -149,6 +149,31 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
     document.body.style.cursor = 'col-resize';
   };
 
+  const autoFitColumn = (index: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!bodyRef.current || !headerRef.current) return;
+    // Measure max content width across all body rows for this column
+    const bodyCells = bodyRef.current.querySelectorAll(`tr td:nth-child(${index + 1})`);
+    const headerCell = headerRef.current.querySelector(`tr th:nth-child(${index + 1})`);
+    let maxWidth = 0;
+    // Temporarily remove width constraints to measure natural width
+    bodyCells.forEach(td => {
+      const el = td as HTMLElement;
+      const span = el.querySelector('span');
+      if (span) maxWidth = Math.max(maxWidth, span.scrollWidth + 24); // 24 = padding
+    });
+    if (headerCell) {
+      maxWidth = Math.max(maxWidth, headerCell.scrollWidth + 24);
+    }
+    maxWidth = Math.max(50, maxWidth);
+    setColWidths(prev => {
+      const next = [...prev];
+      next[index] = maxWidth;
+      return next;
+    });
+  };
+
   const totalWidth = colWidths.length ? colWidths.reduce((a, b) => a + b, 0) : undefined;
   const colGroup = colWidths.length > 0 ? (
     <colgroup>
@@ -175,7 +200,7 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
                     >
                       {flexRender(h.column.columnDef.header, h.getContext())}
                       {sorted && <span className="sort-indicator">{orderBy!.direction === 'ASC' ? ' ▲' : ' ▼'}</span>}
-                      <span className="col-resize-handle" onMouseDown={(e) => startResize(h.index, e)} />
+                      <span className="col-resize-handle" onMouseDown={(e) => startResize(h.index, e)} onDoubleClick={(e) => autoFitColumn(h.index, e)} />
                     </th>
                   );
                 })}
