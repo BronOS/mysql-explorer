@@ -287,7 +287,7 @@ export default function Sidebar({ width }: { width: number }) {
         {tableFilter && <span className="sidebar-filter-clear" onClick={() => setTableFilter('')}>✕</span>}
       </div>
       <div className="sidebar-tree">
-        {connections.map(conn => (
+        {[...connections].sort((a, b) => a.name.localeCompare(b.name)).map(conn => (
           <div key={conn.id}>
             <div
               className="tree-node"
