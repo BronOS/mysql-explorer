@@ -11,6 +11,7 @@ export default function Sidebar({ width }: { width: number }) {
   const [expandedConns, setExpandedConns] = useState<Set<string>>(new Set());
   const [expandedDbs, setExpandedDbs] = useState<Set<string>>(new Set());
   const [connecting, setConnecting] = useState<Set<string>>(new Set());
+  const [tableFilter, setTableFilter] = useState('');
 
   const { connections, schema, dispatch, openTab } = useAppContext();
   const ipc = useIpc();
@@ -127,6 +128,16 @@ export default function Sidebar({ width }: { width: number }) {
         <span className="sidebar-title">Connections</span>
         <button className="sidebar-refresh" title="Refresh all" onClick={handleRefreshAll}>↻</button>
       </div>
+      <div className="sidebar-filter">
+        <input
+          className="input"
+          placeholder="Filter tables..."
+          value={tableFilter}
+          onChange={e => setTableFilter(e.target.value)}
+          style={{ padding: '4px 8px', fontSize: 11 }}
+        />
+        {tableFilter && <span className="sidebar-filter-clear" onClick={() => setTableFilter('')}>✕</span>}
+      </div>
       <div className="sidebar-tree">
         {connections.map(conn => (
           <div key={conn.id}>
@@ -148,7 +159,7 @@ export default function Sidebar({ width }: { width: number }) {
                   <span>{db.name}</span>
                 </div>
 
-                {expandedDbs.has(`${conn.id}:${db.name}`) && db.tables.map(table => (
+                {expandedDbs.has(`${conn.id}:${db.name}`) && db.tables.filter(t => !tableFilter || t.toLowerCase().includes(tableFilter.toLowerCase())).map(table => (
                   <div key={table} className="tree-node-indent">
                     <div className="tree-node" onClick={() => handleTableClick(conn, db.name, table)} title={table}>
                       <span style={{ width: 12 }}></span>
