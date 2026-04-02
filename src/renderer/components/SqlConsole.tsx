@@ -272,7 +272,7 @@ export default function SqlConsole({ tab }: Props) {
           <button className="btn btn-secondary" onClick={handleFormat} style={{ marginLeft: 8 }}>
             Format
           </button>
-          <span className="sql-shortcut">⌘+⇧+F</span>
+          <span className="sql-shortcut">⌘+Shift+F</span>
           <select
             className="select"
             value={selectedDb}
