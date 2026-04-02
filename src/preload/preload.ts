@@ -24,6 +24,8 @@ const electronAPI = {
     ipcRenderer.invoke('query:update', connectionId, database, table, column, value, pkColumn, pkValue),
   queryBulkUpdate: (connectionId: string, database: string, table: string, pkColumn: string, changes: any[]) =>
     ipcRenderer.invoke('query:bulk-update', connectionId, database, table, pkColumn, changes),
+  queryInsertRows: (connectionId: string, database: string, table: string, rows: any[]) =>
+    ipcRenderer.invoke('query:insert-rows', connectionId, database, table, rows),
 
   // File
   sqlFileLoad: (connectionId: string) => ipcRenderer.invoke('file:sql-load', connectionId),

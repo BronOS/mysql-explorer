@@ -85,6 +85,11 @@ export function registerIpcHandlers(
     return queryExecutor.bulkUpdate(pool, database, table, pkColumn, changes);
   });
 
+  ipcMain.handle('query:insert-rows', async (_, connectionId, database, table, rows) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    return queryExecutor.insertRows(pool, database, table, rows);
+  });
+
   // File
   ipcMain.handle('file:sql-load', (_, connectionId) => fileManager.loadSqlFile(connectionId));
   ipcMain.handle('file:sql-save', (_, connectionId, content) => fileManager.saveSqlFile(connectionId, content));

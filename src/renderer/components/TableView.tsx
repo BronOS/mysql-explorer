@@ -23,6 +23,7 @@ export default function TableView({ tab }: Props) {
   const [orderBy, setOrderBy] = useState<{ column: string; direction: 'ASC' | 'DESC' } | null>(null);
   const [saveMode, setSaveMode] = useState<'auto' | 'bulk'>(() => (localStorage.getItem('saveMode') as 'auto' | 'bulk') || 'auto');
   const [pendingChanges, setPendingChanges] = useState<Map<string, unknown>>(new Map());
+  const [draftRows, setDraftRows] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [primaryKey, setPrimaryKey] = useState<string | null>(null);
 
@@ -77,7 +78,7 @@ export default function TableView({ tab }: Props) {
       if (orderBy.direction === 'ASC') {
         newSort = { column, direction: 'DESC' };
       } else {
-        newSort = null; // third click removes sort
+        newSort = null;
       }
     } else {
       newSort = { column, direction: 'ASC' };
@@ -87,6 +88,13 @@ export default function TableView({ tab }: Props) {
   };
 
   const handleCellSave = async (pkValue: unknown, column: string, value: unknown) => {
+    // Check if this is a draft row edit
+    const draftIdx = draftRows.findIndex(r => r.__draftId === pkValue);
+    if (draftIdx >= 0) {
+      setDraftRows(prev => prev.map(r => r.__draftId === pkValue ? { ...r, [column]: value } : r));
+      return;
+    }
+
     if (saveMode === 'auto') {
       await ipc.queryUpdate(tab.connectionId, tab.database!, tab.table!, column, value, primaryKey!, pkValue);
       handleRefresh();
@@ -100,17 +108,70 @@ export default function TableView({ tab }: Props) {
   };
 
   const handleBulkCommit = async () => {
-    if (!primaryKey || pendingChanges.size === 0) return;
-    const changes = Array.from(pendingChanges.entries()).map(([key, value]) => {
-      const separatorIdx = key.indexOf(':');
-      const pkValue = key.slice(0, separatorIdx);
-      const column = key.slice(separatorIdx + 1);
-      return { pkValue, column, value };
-    });
-    await ipc.queryBulkUpdate(tab.connectionId, tab.database!, tab.table!, primaryKey, changes);
-    setPendingChanges(new Map());
+    // Commit pending changes (updates)
+    if (primaryKey && pendingChanges.size > 0) {
+      const changes = Array.from(pendingChanges.entries()).map(([key, value]) => {
+        const separatorIdx = key.indexOf(':');
+        const pkValue = key.slice(0, separatorIdx);
+        const column = key.slice(separatorIdx + 1);
+        return { pkValue, column, value };
+      });
+      await ipc.queryBulkUpdate(tab.connectionId, tab.database!, tab.table!, primaryKey, changes);
+      setPendingChanges(new Map());
+    }
+
+    // Commit draft rows (inserts)
+    if (draftRows.length > 0) {
+      const rowsToInsert = draftRows.map(r => {
+        const row: Record<string, unknown> = {};
+        for (const col of columns) {
+          if (col.extra === 'auto_increment') continue; // skip auto-increment PK
+          if (r[col.name] !== undefined && r[col.name] !== null) {
+            row[col.name] = r[col.name];
+          }
+        }
+        return row;
+      });
+      await ipc.queryInsertRows(tab.connectionId, tab.database!, tab.table!, rowsToInsert);
+      setDraftRows([]);
+      setStatus(`${rowsToInsert.length} row(s) inserted`, 'success');
+    }
+
     handleRefresh();
   };
+
+  const handleAddRow = () => {
+    const newRow: Record<string, unknown> = { __draftId: `draft_${Date.now()}_${Math.random()}` };
+    for (const col of columns) {
+      if (col.extra === 'auto_increment') {
+        newRow[col.name] = '(auto)';
+      } else if (col.defaultValue !== null) {
+        newRow[col.name] = col.defaultValue;
+      } else {
+        newRow[col.name] = null;
+      }
+    }
+    setDraftRows(prev => [...prev, newRow]);
+  };
+
+  const handleDuplicateRow = (row: Record<string, unknown>) => {
+    const newRow: Record<string, unknown> = { __draftId: `draft_${Date.now()}_${Math.random()}` };
+    for (const col of columns) {
+      if (col.extra === 'auto_increment') {
+        newRow[col.name] = '(auto)';
+      } else {
+        newRow[col.name] = row[col.name];
+      }
+    }
+    setDraftRows(prev => [...prev, newRow]);
+  };
+
+  const handleDiscardDrafts = () => {
+    setDraftRows([]);
+    setPendingChanges(new Map());
+  };
+
+  const hasPending = pendingChanges.size > 0 || draftRows.length > 0;
 
   return (
     <div className="table-view">
@@ -120,12 +181,17 @@ export default function TableView({ tab }: Props) {
         saveMode={saveMode}
         onSaveModeChange={(mode) => { setSaveMode(mode); localStorage.setItem('saveMode', mode); }}
         onRefresh={handleRefresh}
+        onAddRow={handleAddRow}
       />
-      {saveMode === 'bulk' && pendingChanges.size > 0 && (
+      {hasPending && (
         <div className="bulk-commit-bar">
-          <span>{pendingChanges.size} pending change(s)</span>
+          <span>
+            {draftRows.length > 0 && `${draftRows.length} new row(s)`}
+            {draftRows.length > 0 && pendingChanges.size > 0 && ', '}
+            {pendingChanges.size > 0 && `${pendingChanges.size} change(s)`}
+          </span>
           <button className="btn btn-primary" onClick={handleBulkCommit}>Commit</button>
-          <button className="btn btn-secondary" onClick={() => setPendingChanges(new Map())}>Discard</button>
+          <button className="btn btn-secondary" onClick={handleDiscardDrafts}>Discard</button>
         </div>
       )}
       {loading ? (
@@ -134,12 +200,14 @@ export default function TableView({ tab }: Props) {
         <DataGrid
           columns={columns}
           rows={rows}
+          draftRows={draftRows}
           primaryKey={primaryKey}
           saveMode={saveMode}
           onCellSave={handleCellSave}
           pendingChanges={pendingChanges}
           orderBy={orderBy}
           onSort={handleSort}
+          onDuplicateRow={handleDuplicateRow}
         />
       )}
       {!loading && totalCount > 0 && (

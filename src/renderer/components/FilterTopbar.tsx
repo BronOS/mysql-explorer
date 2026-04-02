@@ -10,9 +10,10 @@ interface Props {
   saveMode: 'auto' | 'bulk';
   onSaveModeChange: (mode: 'auto' | 'bulk') => void;
   onRefresh: () => void;
+  onAddRow?: () => void;
 }
 
-export default function FilterTopbar({ columns, onFilterChange, saveMode, onSaveModeChange, onRefresh }: Props) {
+export default function FilterTopbar({ columns, onFilterChange, saveMode, onSaveModeChange, onRefresh, onAddRow }: Props) {
   const [mode, setMode] = useState<'structured' | 'raw'>('structured');
   const [filters, setFilters] = useState<FilterCondition[]>([]);
   const [rawWhere, setRawWhere] = useState('');
@@ -121,6 +122,7 @@ export default function FilterTopbar({ columns, onFilterChange, saveMode, onSave
       </div>
 
       <div className="filter-right">
+        {onAddRow && <button className="btn btn-secondary" onClick={onAddRow} title="Add new row">+ Row</button>}
         <button className="btn btn-secondary" onClick={onRefresh} title="Refresh">↻</button>
         <span style={{ opacity: 0.6, fontSize: 11 }}>Save Mode:</span>
         <span

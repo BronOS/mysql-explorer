@@ -10,20 +10,24 @@ interface CellContextMenu {
   pkValue: unknown;
   column: ColumnMeta;
   value: unknown;
+  rowOriginal: Record<string, unknown>;
+  isDraft: boolean;
 }
 
 interface Props {
   columns: ColumnMeta[];
   rows: Record<string, unknown>[];
+  draftRows?: Record<string, unknown>[];
   primaryKey: string | null;
   saveMode: 'auto' | 'bulk';
   onCellSave: (rowPkValue: unknown, column: string, value: unknown) => void;
   pendingChanges: Map<string, unknown>;
   orderBy?: { column: string; direction: 'ASC' | 'DESC' } | null;
   onSort?: (column: string) => void;
+  onDuplicateRow?: (row: Record<string, unknown>) => void;
 }
 
-export default function DataGrid({ columns, rows, primaryKey, saveMode, onCellSave, pendingChanges, orderBy, onSort }: Props) {
+export default function DataGrid({ columns, rows, draftRows = [], primaryKey, saveMode, onCellSave, pendingChanges, orderBy, onSort, onDuplicateRow }: Props) {
   const [textModal, setTextModal] = useState<{ value: string; onSave: (v: string) => void } | null>(null);
   const [cellMenu, setCellMenu] = useState<CellContextMenu | null>(null);
   const [menuPos, setMenuPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
@@ -45,33 +49,39 @@ export default function DataGrid({ columns, rows, primaryKey, saveMode, onCellSa
     }
   }, [cellMenu]);
 
+  const allRows = useMemo(() => [...draftRows, ...rows], [draftRows, rows]);
+
   const tableCols = useMemo<ColumnDef<Record<string, unknown>>[]>(() =>
     columns.map(col => ({
       accessorKey: col.name,
       header: col.name,
       cell: ({ row }) => {
-        const pkValue = primaryKey ? row.original[primaryKey] : null;
+        const isDraft = '__draftId' in row.original;
+        const pkValue = isDraft ? row.original.__draftId : (primaryKey ? row.original[primaryKey] : null);
         const changeKey = `${pkValue}:${col.name}`;
         const currentValue = pendingChanges.has(changeKey)
           ? pendingChanges.get(changeKey)
           : row.original[col.name];
 
+        const isAutoIncrement = col.extra === 'auto_increment';
+        const cellEditable = isDraft ? !isAutoIncrement : (editable && col.key !== 'PRI');
+
         return (
           <CellEditor
             value={currentValue}
             column={col}
-            editable={editable && col.key !== 'PRI'}
+            editable={cellEditable}
             onSave={(newValue) => onCellSave(pkValue, col.name, newValue)}
             onOpenTextModal={(val, saveFn) => setTextModal({ value: val, onSave: saveFn })}
           />
         );
       },
     })),
-    [columns, primaryKey, editable, pendingChanges, onCellSave],
+    [columns, primaryKey, editable, pendingChanges, onCellSave, draftRows],
   );
 
   const table = useReactTable({
-    data: rows,
+    data: allRows,
     columns: tableCols,
     getCoreRowModel: getCoreRowModel(),
   });
@@ -101,24 +111,27 @@ export default function DataGrid({ columns, rows, primaryKey, saveMode, onCellSa
             ))}
           </thead>
           <tbody>
-            {table.getRowModel().rows.map(row => (
-              <tr key={row.id}>
+            {table.getRowModel().rows.map(row => {
+              const isDraft = '__draftId' in row.original;
+              return (
+              <tr key={row.id} className={isDraft ? 'row-draft' : ''}>
                 {row.getVisibleCells().map(cell => {
-                  const pkValue = primaryKey ? row.original[primaryKey] : null;
+                  const pkValue = isDraft ? row.original.__draftId : (primaryKey ? row.original[primaryKey] : null);
                   const colMeta = columns.find(c => c.name === cell.column.id);
-                  const isModified = pendingChanges.has(`${pkValue}:${cell.column.id}`);
+                  const isModified = pendingChanges.has(`${pkValue}:${cell.column.id}`) || isDraft;
                   return (
                     <td
                       key={cell.id}
                       className={isModified ? 'cell-modified' : ''}
                       onContextMenu={(e) => {
-                        if (!editable || !colMeta || colMeta.key === 'PRI') return;
+                        if (!colMeta) return;
+                        if (!isDraft && !editable) return;
                         e.preventDefault();
                         const changeKey = `${pkValue}:${cell.column.id}`;
                         const currentValue = pendingChanges.has(changeKey)
                           ? pendingChanges.get(changeKey)
                           : row.original[cell.column.id];
-                        setCellMenu({ x: e.clientX, y: e.clientY, pkValue, column: colMeta, value: currentValue });
+                        setCellMenu({ x: e.clientX, y: e.clientY, pkValue, column: colMeta, value: currentValue, rowOriginal: row.original, isDraft });
                       }}
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -126,7 +139,8 @@ export default function DataGrid({ columns, rows, primaryKey, saveMode, onCellSa
                   );
                 })}
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -178,6 +192,14 @@ export default function DataGrid({ columns, rows, primaryKey, saveMode, onCellSa
           >
             Copy Column Name
           </div>
+          {onDuplicateRow && !cellMenu.isDraft && (
+            <div
+              className="context-menu-item"
+              onClick={() => { onDuplicateRow(cellMenu.rowOriginal); setCellMenu(null); }}
+            >
+              Duplicate Row
+            </div>
+          )}
         </div>
       )}
     </>

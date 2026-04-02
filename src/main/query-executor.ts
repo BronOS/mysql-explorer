@@ -100,4 +100,32 @@ export class QueryExecutor {
     }
     return { affectedRows: totalAffected };
   }
+
+  async insertRows(
+    pool: Pool,
+    database: string,
+    table: string,
+    rows: Record<string, unknown>[],
+  ): Promise<{ affectedRows: number }> {
+    if (rows.length === 0) return { affectedRows: 0 };
+    const conn = await pool.getConnection();
+    let totalAffected = 0;
+    try {
+      await conn.beginTransaction();
+      for (const row of rows) {
+        const cols = Object.keys(row).filter(k => row[k] !== undefined);
+        const vals = cols.map(k => row[k]);
+        const sql = `INSERT INTO \`${database}\`.\`${table}\` (${cols.map(c => `\`${c}\``).join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`;
+        const [result] = await conn.query(sql, vals);
+        totalAffected += (result as any).affectedRows;
+      }
+      await conn.commit();
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
+    return { affectedRows: totalAffected };
+  }
 }
