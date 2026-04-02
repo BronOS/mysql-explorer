@@ -237,15 +237,15 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
 
     let maxWidth = 0;
 
-    // Measure header text
-    const headerCell = headerRef.current.querySelector(`tr th:nth-child(${index + 1})`);
+    // Measure header text (+2 to skip # column)
+    const headerCell = headerRef.current.querySelector(`tr th:nth-child(${index + 2})`);
     if (headerCell) {
       measure.textContent = headerCell.textContent || '';
       maxWidth = Math.max(maxWidth, measure.offsetWidth);
     }
 
-    // Measure body cell texts
-    const bodyCells = bodyRef.current.querySelectorAll(`tbody tr td:nth-child(${index + 1})`);
+    // Measure body cell texts (+2 to skip row number column)
+    const bodyCells = bodyRef.current.querySelectorAll(`tbody tr td:nth-child(${index + 2})`);
     bodyCells.forEach(td => {
       measure.textContent = (td as HTMLElement).textContent || '';
       maxWidth = Math.max(maxWidth, measure.offsetWidth);
