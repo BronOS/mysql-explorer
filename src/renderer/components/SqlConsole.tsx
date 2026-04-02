@@ -115,6 +115,7 @@ function computeActiveDecorations(state: any): DecorationSet {
 
 export default function SqlConsole({ tab }: Props) {
   const ipc = useIpc();
+  const { setStatus } = useAppContext();
   const { schema } = useAppContext();
   const [code, setCode] = useState('');
   const [result, setResult] = useState<QueryResult | null>(null);
@@ -190,6 +191,7 @@ export default function SqlConsole({ tab }: Props) {
     if (!queryToRun) return;
     setRunning(true);
     setResult(null);
+    setStatus('Executing query...', 'info');
     if (selectedDb) {
       await ipc.queryUseDatabase(tab.connectionId, selectedDb).catch(() => {});
     }
@@ -197,6 +199,13 @@ export default function SqlConsole({ tab }: Props) {
     setResult(res);
     setResultPage(1);
     setRunning(false);
+    if (res.error) {
+      setStatus(`Error: ${res.error}`, 'error');
+    } else if (res.type === 'rows') {
+      setStatus(`${res.totalCount?.toLocaleString()} rows returned in ${(res.executionTimeMs / 1000).toFixed(3)}s`, 'success');
+    } else {
+      setStatus(`${res.affectedRows} rows affected in ${(res.executionTimeMs / 1000).toFixed(3)}s`, 'success');
+    }
   };
 
   const handleFormat = () => {

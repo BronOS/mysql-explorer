@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useIpc } from '../hooks/use-ipc';
+import { useAppContext } from '../context/app-context';
 import { ColumnMeta, TabInfo } from '../../shared/types';
 import FilterTopbar from './FilterTopbar';
 import DataGrid from './DataGrid';
@@ -13,6 +14,7 @@ const PAGE_SIZE = 1000;
 
 export default function TableView({ tab }: Props) {
   const ipc = useIpc();
+  const { setStatus } = useAppContext();
   const [columns, setColumns] = useState<ColumnMeta[]>([]);
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -26,6 +28,7 @@ export default function TableView({ tab }: Props) {
 
   const loadData = useCallback(async (pageNum: number, whereClause: string, sort?: { column: string; direction: 'ASC' | 'DESC' } | null) => {
     setLoading(true);
+    setStatus(`Loading ${tab.database}.${tab.table}...`, 'info');
     try {
       if (columns.length === 0) {
         const cols = await ipc.schemaDescribe(tab.connectionId, tab.database!, tab.table!);
@@ -45,6 +48,7 @@ export default function TableView({ tab }: Props) {
       setRows(data.rows);
       setTotalCount(data.totalCount);
       setPage(pageNum);
+      setStatus(`${data.totalCount.toLocaleString()} rows in ${tab.database}.${tab.table}`, 'success');
     } finally {
       setLoading(false);
     }

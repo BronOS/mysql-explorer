@@ -19,14 +19,22 @@ function persistTabs(tabs: TabInfo[], activeTabId: string | null): void {
   try { localStorage.setItem('tabState', JSON.stringify({ tabs, activeTabId })); } catch {}
 }
 
+interface StatusMessage {
+  text: string;
+  type: 'info' | 'error' | 'success';
+  timestamp: number;
+}
+
 interface AppState {
   connections: ConnectionConfig[];
   tabs: TabInfo[];
   activeTabId: string | null;
   schema: SchemaTree;
+  status: StatusMessage | null;
 }
 
 type Action =
+  | { type: 'SET_STATUS'; status: StatusMessage | null }
   | { type: 'SET_CONNECTIONS'; connections: ConnectionConfig[] }
   | { type: 'OPEN_TAB'; tab: TabInfo }
   | { type: 'CLOSE_TAB'; tabId: string }
@@ -37,6 +45,9 @@ type Action =
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
+    case 'SET_STATUS':
+      return { ...state, status: action.status };
+
     case 'SET_CONNECTIONS':
       return { ...state, connections: action.connections };
 
@@ -111,6 +122,7 @@ interface AppContextValue extends AppState {
   openTab: (opts: Omit<TabInfo, 'id' | 'lastAccessed'>) => void;
   closeTab: (tabId: string) => void;
   setActiveTab: (tabId: string) => void;
+  setStatus: (text: string, type?: 'info' | 'error' | 'success') => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -122,6 +134,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     tabs: persisted.tabs,
     activeTabId: persisted.activeTabId,
     schema: {},
+    status: null,
   });
 
   // Persist tabs whenever they change
@@ -152,8 +165,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'SET_ACTIVE_TAB', tabId });
   }, []);
 
+  const setStatus = useCallback((text: string, type: 'info' | 'error' | 'success' = 'info') => {
+    dispatch({ type: 'SET_STATUS', status: { text, type, timestamp: Date.now() } });
+  }, []);
+
   return (
-    <AppContext.Provider value={{ ...state, dispatch, openTab, closeTab, setActiveTab }}>
+    <AppContext.Provider value={{ ...state, dispatch, openTab, closeTab, setActiveTab, setStatus }}>
       {children}
     </AppContext.Provider>
   );

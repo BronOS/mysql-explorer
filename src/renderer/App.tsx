@@ -5,6 +5,30 @@ import TabBar from './components/TabBar';
 import TableView from './components/TableView';
 import SqlConsole from './components/SqlConsole';
 
+function StatusBar() {
+  const { status, tabs, activeTabId, connections } = useAppContext();
+  const activeTab = tabs.find(t => t.id === activeTabId);
+  const conn = activeTab ? connections.find(c => c.id === activeTab.connectionId) : null;
+
+  const statusColor = status?.type === 'error' ? '#ef4444' : status?.type === 'success' ? '#4ade80' : '#888';
+
+  return (
+    <div className="status-bar">
+      <span className="status-left">
+        {conn && <span style={{ color: conn.color }}>{conn.name}</span>}
+        {activeTab?.type === 'table' && <span> — {activeTab.database}.{activeTab.table}</span>}
+        {activeTab?.type === 'console' && <span> — SQL Console</span>}
+      </span>
+      <span className="status-center" style={{ color: statusColor }}>
+        {status?.text || ''}
+      </span>
+      <span className="status-right">
+        {tabs.length > 0 && <span>{tabs.length} tab{tabs.length !== 1 ? 's' : ''}</span>}
+      </span>
+    </div>
+  );
+}
+
 export default function App() {
   const { tabs, activeTabId, setActiveTab } = useAppContext();
   const activeTab = tabs.find(t => t.id === activeTabId);
@@ -47,6 +71,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <div className="app-body">
       <Sidebar width={sidebarWidth} />
       <div
         className="sidebar-resizer"
@@ -66,6 +91,8 @@ export default function App() {
           ))}
         </div>
       </div>
+      </div>
+      <StatusBar />
     </div>
   );
 }
