@@ -71,6 +71,7 @@ export class ConnectionManager {
       database: config.defaultDatabase || undefined,
       connectionLimit: 5,
       waitForConnections: true,
+      connectTimeout: 10000,
     });
 
     // Verify the connection works
@@ -120,21 +121,47 @@ export class ConnectionManager {
   private createSshTunnel(config: ConnectionConfig): Promise<{ client: SSHClient; server: net.Server; localPort: number }> {
     return new Promise((resolve, reject) => {
       const client = new SSHClient();
+      let settled = false;
+
+      const timeout = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          client.end();
+          reject(new Error('SSH connection timed out after 10 seconds'));
+        }
+      }, 10000);
+
+      const fail = (err: Error) => {
+        if (!settled) {
+          settled = true;
+          clearTimeout(timeout);
+          client.end();
+          reject(err);
+        }
+      };
 
       const sshConfig: any = {
         host: config.sshHost,
         port: config.sshPort || 22,
         username: config.sshUser,
+        readyTimeout: 10000,
       };
 
       if (config.sshAuthType === 'key') {
-        sshConfig.privateKey = fs.readFileSync(config.sshKeyPath!);
+        try {
+          sshConfig.privateKey = fs.readFileSync(config.sshKeyPath!);
+        } catch (err: any) {
+          clearTimeout(timeout);
+          reject(new Error(`Cannot read SSH key file: ${err.message}`));
+          return;
+        }
         if (config.sshPassphrase) sshConfig.passphrase = config.sshPassphrase;
       } else {
         sshConfig.password = config.sshPassword;
       }
 
       client.on('ready', () => {
+        clearTimeout(timeout);
         const server = net.createServer((sock) => {
           client.forwardOut(
             sock.remoteAddress || '127.0.0.1',
@@ -149,12 +176,15 @@ export class ConnectionManager {
         });
 
         server.listen(0, '127.0.0.1', () => {
-          const localPort = (server.address() as net.AddressInfo).port;
-          resolve({ client, server, localPort });
+          if (!settled) {
+            settled = true;
+            const localPort = (server.address() as net.AddressInfo).port;
+            resolve({ client, server, localPort });
+          }
         });
       });
 
-      client.on('error', reject);
+      client.on('error', fail);
       client.connect(sshConfig);
     });
   }
