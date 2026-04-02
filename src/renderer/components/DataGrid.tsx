@@ -32,6 +32,7 @@ interface Props {
 export default function DataGrid({ columns, rows, draftRows = [], primaryKey, saveMode, onCellSave, pendingChanges, orderBy, onSort, onDuplicateRow, onDeleteRow, onDeleteDraftRow }: Props) {
   const [textModal, setTextModal] = useState<{ value: string; onSave: (v: string) => void } | null>(null);
   const [cellMenu, setCellMenu] = useState<CellContextMenu | null>(null);
+  const [selectedRowIdx, setSelectedRowIdx] = useState<number | null>(null);
   const [menuPos, setMenuPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
   const editable = primaryKey !== null;
@@ -214,6 +215,7 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
           <thead>
             {table.getHeaderGroups().map(hg => (
               <tr key={hg.id}>
+                <th className="row-num-header">#</th>
                 {hg.headers.map(h => {
                   const colId = h.column.id;
                   const sorted = orderBy?.column === colId;
@@ -242,7 +244,10 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
               const isDraft = '__draftId' in row.original;
               const isLastDraft = isDraft && rowIdx === table.getRowModel().rows.length - 1;
               return (
-              <tr key={row.id} className={isDraft ? 'row-draft' : ''} ref={isLastDraft ? lastDraftRef : undefined}>
+              <tr key={row.id} className={`${isDraft ? 'row-draft' : ''} ${selectedRowIdx === rowIdx ? 'row-selected' : ''}`} ref={isLastDraft ? lastDraftRef : undefined}>
+                <td className="row-num-cell" onClick={() => setSelectedRowIdx(selectedRowIdx === rowIdx ? null : rowIdx)}>
+                  {isDraft ? '•' : rowIdx + 1}
+                </td>
                 {row.getVisibleCells().map(cell => {
                   const pkValue = isDraft ? row.original.__draftId : (primaryKey ? row.original[primaryKey] : null);
                   const colMeta = columns.find(c => c.name === cell.column.id);
