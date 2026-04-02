@@ -191,9 +191,13 @@ export default function SqlConsole({ tab }: Props) {
         const formatted = formatSql(selected, { language: 'mysql', tabWidth: 2, keywordCase: 'upper' });
         view.dispatch({ changes: { from: selection.from, to: selection.to, insert: formatted } });
       } else {
-        // Format entire editor
-        const formatted = formatSql(code, { language: 'mysql', tabWidth: 2, keywordCase: 'upper' });
-        handleCodeChange(formatted);
+        // Format only the current query at cursor
+        const doc = state.doc.toString();
+        const query = findQueryAtCursor(doc, selection.head);
+        if (query.text) {
+          const formatted = formatSql(query.text, { language: 'mysql', tabWidth: 2, keywordCase: 'upper' });
+          view.dispatch({ changes: { from: query.from, to: query.to, insert: formatted } });
+        }
       }
     } catch {}
   };
