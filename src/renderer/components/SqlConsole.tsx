@@ -61,6 +61,9 @@ export default function SqlConsole({ tab }: Props) {
     if (!code.trim()) return;
     setRunning(true);
     setResult(null);
+    if (selectedDb) {
+      await ipc.queryUseDatabase(tab.connectionId, selectedDb).catch(() => {});
+    }
     const res = await ipc.queryExecute(tab.connectionId, code);
     setResult(res);
     setResultPage(1);
