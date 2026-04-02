@@ -106,24 +106,25 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
     }
   };
 
-  // Reset widths when columns change (different table opened)
-  const prevColCount = useRef(0);
+  // Measure body column widths once when data first loads
+  const measured = useRef(false);
   useLayoutEffect(() => {
-    if (columns.length !== prevColCount.current) {
-      prevColCount.current = columns.length;
-      setColWidths([]); // reset so next effect measures fresh
-    }
-  }, [columns]);
-
-  // Measure body column widths when no widths set
-  useLayoutEffect(() => {
-    if (colWidths.length > 0) return;
+    if (measured.current && colWidths.length > 0) return;
     if (!bodyRef.current) return;
-    const firstRow = bodyRef.current.querySelector('tr');
+    const firstRow = bodyRef.current.querySelector('tbody tr');
     if (!firstRow) return;
     const widths = Array.from(firstRow.children).map(td => (td as HTMLElement).offsetWidth);
-    if (widths.length > 0) setColWidths(widths);
-  }, [colWidths.length, allRows]);
+    if (widths.length > 0 && widths.some(w => w > 0)) {
+      measured.current = true;
+      setColWidths(widths);
+    }
+  });
+
+  // Reset measurement when switching tables
+  useEffect(() => {
+    measured.current = false;
+    setColWidths([]);
+  }, [columns.length]);
 
   // Column resize handlers
   useEffect(() => {
@@ -183,17 +184,19 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
     });
   };
 
-  const totalWidth = colWidths.length ? colWidths.reduce((a, b) => a + b, 0) : undefined;
-  const colGroup = colWidths.length > 0 ? (
+  const hasWidths = colWidths.length > 0;
+  const totalWidth = hasWidths ? colWidths.reduce((a, b) => a + b, 0) : undefined;
+  const tableStyle = totalWidth ? { width: totalWidth, tableLayout: 'fixed' as const } : undefined;
+  const colGroup = hasWidths ? (
     <colgroup>
-      {colWidths.map((w, i) => <col key={i} style={{ width: w, minWidth: w }} />)}
+      {colWidths.map((w, i) => <col key={i} style={{ width: w }} />)}
     </colgroup>
   ) : null;
 
   return (
     <>
       <div className="datagrid-header" ref={headerRef}>
-        <table className="datagrid" style={totalWidth ? { width: totalWidth } : undefined}>
+        <table className="datagrid" style={tableStyle}>
           {colGroup}
           <thead>
             {table.getHeaderGroups().map(hg => (
@@ -219,7 +222,7 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
         </table>
       </div>
       <div className="datagrid-wrapper" ref={bodyRef} onScroll={handleBodyScroll}>
-        <table className="datagrid" style={totalWidth ? { width: totalWidth } : undefined}>
+        <table className="datagrid" style={tableStyle}>
           {colGroup}
           <tbody>
             {table.getRowModel().rows.map((row, rowIdx) => {
