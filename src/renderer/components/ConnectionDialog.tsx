@@ -60,7 +60,7 @@ export default function ConnectionDialog({ connection, onClose, onSaved }: Props
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
           <label>
             <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Name</div>
-            <input className="input" value={form.name} onChange={e => set('name', e.target.value)} />
+            <input className="input" placeholder="e.g. Production, Dev11" value={form.name} onChange={e => set('name', e.target.value)} />
           </label>
           <label>
             <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Color</div>
@@ -168,7 +168,7 @@ export default function ConnectionDialog({ connection, onClose, onSaved }: Props
             {testing ? 'Testing...' : 'Test Connection'}
           </button>
           <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleSave}>Save</button>
+          <button className="btn btn-primary" onClick={handleSave} disabled={!form.name.trim()}>Save</button>
         </div>
       </div>
     </div>
