@@ -11,6 +11,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .sidebar-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #888; flex: 1; }
 .sidebar-refresh { background: none; border: none; color: #888; cursor: pointer; font-size: 14px; padding: 2px 6px; border-radius: 3px; }
 .sidebar-refresh:hover { background: #0f3460; color: #00d2ff; }
+.sidebar-footer { padding: 8px; border-top: 1px solid #0f3460; }
 .sidebar-filter { padding: 8px 8px 0; position: relative; }
 .sidebar-filter-clear { position: absolute; right: 14px; top: 14px; color: #555; cursor: pointer; font-size: 10px; }
 .sidebar-filter-clear:hover { color: #ef4444; }

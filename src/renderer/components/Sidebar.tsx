@@ -295,6 +295,8 @@ export default function Sidebar({ width }: { width: number }) {
           </div>
         ))}
 
+      </div>
+      <div className="sidebar-footer">
         <button className="add-connection-btn" onClick={() => { setEditingConnection(undefined); setShowDialog(true); }}>
           + Add Connection
         </button>
