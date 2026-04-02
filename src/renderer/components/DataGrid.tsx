@@ -32,10 +32,75 @@ interface Props {
 export default function DataGrid({ columns, rows, draftRows = [], primaryKey, saveMode, onCellSave, pendingChanges, orderBy, onSort, onDuplicateRow, onDeleteRow, onDeleteDraftRow }: Props) {
   const [textModal, setTextModal] = useState<{ value: string; onSave: (v: string) => void } | null>(null);
   const [cellMenu, setCellMenu] = useState<CellContextMenu | null>(null);
-  const [selectedRowIdx, setSelectedRowIdx] = useState<number | null>(null);
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [lastClickedRow, setLastClickedRow] = useState<number | null>(null);
+  const [copyFeedback, setCopyFeedback] = useState('');
   const [menuPos, setMenuPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
   const editable = primaryKey !== null;
+
+  const handleRowSelect = (index: number, e: React.MouseEvent) => {
+    if (e.shiftKey && lastClickedRow !== null) {
+      const start = Math.min(lastClickedRow, index);
+      const end = Math.max(lastClickedRow, index);
+      setSelectedRows(prev => {
+        const next = new Set(prev);
+        for (let i = start; i <= end; i++) next.add(i);
+        return next;
+      });
+    } else if (e.metaKey || e.ctrlKey) {
+      setSelectedRows(prev => {
+        const next = new Set(prev);
+        if (next.has(index)) next.delete(index); else next.add(index);
+        return next;
+      });
+    } else {
+      setSelectedRows(new Set([index]));
+    }
+    setLastClickedRow(index);
+  };
+
+  const cellToString = (val: unknown): string => val === null || val === undefined ? 'NULL' : String(val);
+  const colNames = columns.map(c => c.name);
+
+  const copyRows = (format: string) => {
+    const indices = selectedRows.size > 0 ? selectedRows : undefined;
+    const filtered = indices ? allRows.filter((_, i) => indices.has(i)) : allRows;
+    let text = '';
+    switch (format) {
+      case 'tsv':
+        text = colNames.join('\t') + '\n' + filtered.map(r => colNames.map(c => cellToString(r[c])).join('\t')).join('\n');
+        break;
+      case 'csv': {
+        const esc = (v: string) => v.includes(',') || v.includes('"') || v.includes('\n') ? `"${v.replace(/"/g, '""')}"` : v;
+        text = colNames.map(esc).join(',') + '\n' + filtered.map(r => colNames.map(c => esc(cellToString(r[c]))).join(',')).join('\n');
+        break;
+      }
+      case 'markdown':
+        text = '| ' + colNames.join(' | ') + ' |\n| ' + colNames.map(() => '---').join(' | ') + ' |\n' +
+          filtered.map(r => '| ' + colNames.map(c => cellToString(r[c])).join(' | ') + ' |').join('\n');
+        break;
+      case 'json':
+        text = JSON.stringify(filtered.map(r => { const o: any = {}; colNames.forEach(c => o[c] = r[c]); return o; }), null, 2);
+        break;
+      case 'sql':
+        text = filtered.map(r => {
+          const vals = colNames.map(c => { const v = r[c]; return v === null || v === undefined ? 'NULL' : typeof v === 'number' ? String(v) : `'${String(v).replace(/'/g, "\\'")}'`; }).join(', ');
+          return `INSERT INTO table_name (${colNames.map(c => '`' + c + '`').join(', ')}) VALUES (${vals});`;
+        }).join('\n');
+        break;
+      case 'html':
+        text = `<table>\n<thead>\n<tr>${colNames.map(c => `<th>${c}</th>`).join('')}</tr>\n</thead>\n<tbody>\n` +
+          filtered.map(r => '<tr>' + colNames.map(c => `<td>${cellToString(r[c])}</td>`).join('') + '</tr>').join('\n') +
+          '\n</tbody>\n</table>';
+        break;
+    }
+    navigator.clipboard.writeText(text);
+    const count = indices ? indices.size : allRows.length;
+    const labels: Record<string, string> = { tsv: 'TSV', csv: 'CSV', markdown: 'Markdown', json: 'JSON', sql: 'SQL INSERT', html: 'HTML Table' };
+    setCopyFeedback(`Copied ${count} row(s) as ${labels[format]}`);
+    setTimeout(() => setCopyFeedback(''), 2000);
+  };
 
   useEffect(() => {
     const handler = () => setCellMenu(null);
@@ -244,8 +309,8 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
               const isDraft = '__draftId' in row.original;
               const isLastDraft = isDraft && rowIdx === table.getRowModel().rows.length - 1;
               return (
-              <tr key={row.id} className={`${isDraft ? 'row-draft' : ''} ${selectedRowIdx === rowIdx ? 'row-selected' : ''}`} ref={isLastDraft ? lastDraftRef : undefined}>
-                <td className="row-num-cell" onClick={() => setSelectedRowIdx(selectedRowIdx === rowIdx ? null : rowIdx)}>
+              <tr key={row.id} className={`${isDraft ? 'row-draft' : ''} ${selectedRows.has(rowIdx) ? 'row-selected' : ''}`} ref={isLastDraft ? lastDraftRef : undefined}>
+                <td className="row-num-cell" onClick={(e) => handleRowSelect(rowIdx, e)}>
                   {isDraft ? '•' : rowIdx + 1}
                 </td>
                 {row.getVisibleCells().map(cell => {
@@ -256,11 +321,14 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
                     <td
                       key={cell.id}
                       className={isModified ? 'cell-modified' : ''}
-                      onClick={() => setSelectedRowIdx(rowIdx)}
+                      onClick={(e) => handleRowSelect(rowIdx, e)}
                       onContextMenu={(e) => {
                         if (!colMeta) return;
-                        if (!isDraft && !editable) return;
                         e.preventDefault();
+                        if (!selectedRows.has(rowIdx)) {
+                          setSelectedRows(new Set([rowIdx]));
+                          setLastClickedRow(rowIdx);
+                        }
                         const changeKey = `${pkValue}:${cell.column.id}`;
                         const currentValue = pendingChanges.has(changeKey)
                           ? pendingChanges.get(changeKey)
@@ -358,8 +426,15 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
               Delete Row
             </div>
           )}
+          <div style={{ borderTop: '1px solid #515151', margin: '4px 0' }} />
+          {['tsv', 'csv', 'markdown', 'json', 'sql', 'html'].map(fmt => (
+            <div key={fmt} className="context-menu-item" onClick={() => { copyRows(fmt); setCellMenu(null); }}>
+              Copy {selectedRows.size > 1 ? `${selectedRows.size} rows` : 'Row'} as {{ tsv: 'TSV', csv: 'CSV', markdown: 'Markdown', json: 'JSON', sql: 'SQL INSERT', html: 'HTML Table' }[fmt]}
+            </div>
+          ))}
         </div>
       )}
+      {copyFeedback && <div className="copy-feedback">{copyFeedback}</div>}
     </>
   );
 }
