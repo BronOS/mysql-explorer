@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import CodeMirror, { ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { sql, MySQL } from '@codemirror/lang-sql';
 import { oneDark } from '@codemirror/theme-one-dark';
-import { keymap } from '@codemirror/view';
-import { Prec } from '@codemirror/state';
+import { keymap, Decoration, DecorationSet, EditorView } from '@codemirror/view';
+import { Prec, StateField } from '@codemirror/state';
 import { useIpc } from '../hooks/use-ipc';
 import { useDebounce } from '../hooks/use-debounce';
 import { useAppContext } from '../context/app-context';
@@ -51,6 +51,42 @@ function findQueryAtCursor(code: string, cursorPos: number): { from: number; to:
   return blocks[blocks.length - 1];
 }
 
+// Highlight the active query block — pure StateField, no effects/dispatch
+const activeQueryMark = Decoration.line({ class: 'cm-active-query' });
+
+const activeQueryHighlight = StateField.define<DecorationSet>({
+  create(state) {
+    return computeActiveDecorations(state);
+  },
+  update(deco, tr) {
+    if (tr.docChanged || tr.selectionSet) {
+      return computeActiveDecorations(tr.state);
+    }
+    return deco;
+  },
+  provide: f => EditorView.decorations.from(f),
+});
+
+function computeActiveDecorations(state: any): DecorationSet {
+  const sel = state.selection.main;
+  if (!sel.empty) return Decoration.none;
+
+  const doc = state.doc.toString();
+  if (!doc.trim()) return Decoration.none;
+
+  const query = findQueryAtCursor(doc, sel.head);
+  if (!query.text) return Decoration.none;
+
+  const decorations: any[] = [];
+  const from = Math.max(0, query.from);
+  const to = Math.min(query.to, state.doc.length);
+  const startLine = state.doc.lineAt(from).number;
+  const endLine = state.doc.lineAt(to).number;
+  for (let line = startLine; line <= endLine; line++) {
+    decorations.push(activeQueryMark.range(state.doc.line(line).from));
+  }
+  return Decoration.set(decorations, true);
+}
 
 export default function SqlConsole({ tab }: Props) {
   const ipc = useIpc();
@@ -156,6 +192,13 @@ export default function SqlConsole({ tab }: Props) {
     run: () => { handleRunRef.current(); return true; },
   }])), []);
 
+  const schemaObj = completionSchema();
+  const extensions = useMemo(() => [
+    runKeymap,
+    activeQueryHighlight,
+    sql({ dialect: MySQL, schema: schemaObj }),
+  ], [runKeymap, schemaObj]);
+
   // Resizer
   const handleMouseDown = () => { dragging.current = true; };
   useEffect(() => {
@@ -204,7 +247,7 @@ export default function SqlConsole({ tab }: Props) {
             ref={editorRef}
             value={code}
             onChange={handleCodeChange}
-            extensions={[runKeymap, sql({ dialect: MySQL, schema: completionSchema() })]}
+            extensions={extensions}
             theme={oneDark}
             height={`${dividerY - 36}px`}
             basicSetup={{ lineNumbers: true, foldGutter: true, autocompletion: true }}
