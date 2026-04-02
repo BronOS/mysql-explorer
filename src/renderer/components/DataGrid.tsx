@@ -287,7 +287,7 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
                     setSelectedRows(new Set(allRows.map((_, i) => i)));
                   }
                 }} title={selectedRows.size === allRows.length ? 'Deselect all' : 'Select all'}>#</th>
-                {hg.headers.map(h => {
+                {hg.headers.map((h, colIdx) => {
                   const colId = h.column.id;
                   const sorted = orderBy?.column === colId;
                   return (
@@ -298,7 +298,7 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
                     >
                       {flexRender(h.column.columnDef.header, h.getContext())}
                       {sorted && <span className="sort-indicator">{orderBy!.direction === 'ASC' ? ' ▲' : ' ▼'}</span>}
-                      <span className="col-resize-handle" onMouseDown={(e) => startResize(h.index, e)} onDoubleClick={(e) => autoFitColumn(h.index, e)} onClick={(e) => e.stopPropagation()} />
+                      <span className="col-resize-handle" onMouseDown={(e) => startResize(colIdx, e)} onDoubleClick={(e) => autoFitColumn(colIdx, e)} onClick={(e) => e.stopPropagation()} />
                     </th>
                   );
                 })}
