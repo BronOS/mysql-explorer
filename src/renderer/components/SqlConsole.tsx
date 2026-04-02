@@ -104,6 +104,11 @@ export default function SqlConsole({ tab }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<ReactCodeMirrorRef>(null);
 
+  // Focus editor on mount
+  useEffect(() => {
+    setTimeout(() => editorRef.current?.view?.focus(), 50);
+  }, []);
+
   // Load persisted SQL
   useEffect(() => {
     ipc.sqlFileLoad(tab.connectionId).then((content: string) => {
