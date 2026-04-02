@@ -208,16 +208,18 @@ export default function SqlConsole({ tab }: Props) {
   ], [runKeymap, schemaObj]);
 
   // Resizer
+  const dividerRef = useRef(dividerY);
   const handleMouseDown = () => { dragging.current = true; };
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!dragging.current || !containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
-      const y = e.clientY - rect.top;
-      setDividerY(Math.max(100, Math.min(y, rect.height - 100)));
+      const y = Math.max(100, Math.min(e.clientY - rect.top, rect.height - 100));
+      dividerRef.current = y;
+      setDividerY(y);
     };
     const handleMouseUp = () => {
-      if (dragging.current) localStorage.setItem(`consoleDivider:${tab.connectionId}`, String(dividerY));
+      if (dragging.current) localStorage.setItem(`consoleDivider:${tab.connectionId}`, String(dividerRef.current));
       dragging.current = false;
     };
     window.addEventListener('mousemove', handleMouseMove);
