@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import ConnectionDialog from './ConnectionDialog';
+import CreateTableDialog from './CreateTableDialog';
 import { useAppContext } from '../context/app-context';
 import { useIpc } from '../hooks/use-ipc';
 import { ConnectionConfig } from '../../shared/types';
@@ -16,6 +17,8 @@ export default function Sidebar({ width }: { width: number }) {
   const [editingConnection, setEditingConnection] = useState<ConnectionConfig | undefined>();
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; connectionId: string } | null>(null);
   const [tableContextMenu, setTableContextMenu] = useState<{ x: number; y: number; conn: ConnectionConfig; database: string; table: string } | null>(null);
+  const [dbContextMenu, setDbContextMenu] = useState<{ x: number; y: number; conn: ConnectionConfig; database: string } | null>(null);
+  const [showCreateTable, setShowCreateTable] = useState<{ connectionId: string; database: string; conn: ConnectionConfig } | null>(null);
   const [expandedConns, setExpandedConns] = useState<Set<string>>(new Set());
   const [expandedDbs, setExpandedDbs] = useState<Set<string>>(new Set());
   const [connecting, setConnecting] = useState<Set<string>>(new Set());
@@ -148,7 +151,7 @@ export default function Sidebar({ width }: { width: number }) {
     };
     init();
 
-    const handler = () => { setContextMenu(null); setTableContextMenu(null); };
+    const handler = () => { setContextMenu(null); setTableContextMenu(null); setDbContextMenu(null); };
     window.addEventListener('click', handler);
     return () => window.removeEventListener('click', handler);
   }, []);
@@ -312,7 +315,7 @@ export default function Sidebar({ width }: { width: number }) {
 
             {expandedConns.has(conn.id) && schema[conn.id]?.databases.map(db => (
               <div key={db.name} className="tree-node-indent">
-                <div className="tree-node" onClick={() => toggleDatabase(conn.id, db.name)}>
+                <div className="tree-node" onClick={() => toggleDatabase(conn.id, db.name)} onContextMenu={(e) => { e.preventDefault(); setDbContextMenu({ x: e.clientX, y: e.clientY, conn, database: db.name }); }}>
                   <span className="tree-arrow">{loadingDbs.has(`${conn.id}:${db.name}`) ? '⏳' : expandedDbs.has(`${conn.id}:${db.name}`) ? '▼' : '▶'}</span>
                   <span>📁</span>
                   <span>{db.name}</span>
@@ -366,6 +369,37 @@ export default function Sidebar({ width }: { width: number }) {
             setTableContextMenu(null);
           }}>View Schema</div>
         </div>
+      )}
+
+      {dbContextMenu && (
+        <div className="context-menu" style={menuPosition(dbContextMenu.x, dbContextMenu.y, 35)}>
+          <div className="context-menu-item" onClick={() => {
+            setShowCreateTable({ connectionId: dbContextMenu.conn.id, database: dbContextMenu.database, conn: dbContextMenu.conn });
+            setDbContextMenu(null);
+          }}>New Table</div>
+        </div>
+      )}
+
+      {showCreateTable && (
+        <CreateTableDialog
+          connectionId={showCreateTable.connectionId}
+          database={showCreateTable.database}
+          onCreated={async (tableName) => {
+            // Refresh tables in sidebar
+            const tables = await ipc.schemaTables(showCreateTable.connectionId, showCreateTable.database);
+            dispatch({ type: 'SET_TABLES', connectionId: showCreateTable.connectionId, database: showCreateTable.database, tables });
+            // Open schema tab for the new table
+            openTab({
+              connectionId: showCreateTable.connectionId,
+              connectionName: showCreateTable.conn.name,
+              connectionColor: showCreateTable.conn.color,
+              type: 'schema',
+              database: showCreateTable.database,
+              table: tableName,
+            });
+          }}
+          onClose={() => setShowCreateTable(null)}
+        />
       )}
     </div>
   );
