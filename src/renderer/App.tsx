@@ -85,7 +85,7 @@ export default function App() {
           )}
           {tabs.map(tab => (
             <div key={tab.id} className="tab-panel" style={{ display: tab.id === activeTabId ? 'flex' : 'none' }}>
-              {tab.type === 'table' && <TableView tab={tab} />}
+              {tab.type === 'table' && <TableView tab={tab} isActive={tab.id === activeTabId} />}
               {tab.type === 'console' && <SqlConsole tab={tab} isActive={tab.id === activeTabId} />}
             </div>
           ))}

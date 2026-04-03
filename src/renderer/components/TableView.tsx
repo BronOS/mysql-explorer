@@ -8,11 +8,12 @@ import Pagination from './Pagination';
 
 interface Props {
   tab: TabInfo;
+  isActive?: boolean;
 }
 
 const PAGE_SIZE = 1000;
 
-export default function TableView({ tab }: Props) {
+export default function TableView({ tab, isActive }: Props) {
   const ipc = useIpc();
   const { setStatus } = useAppContext();
   const [columns, setColumns] = useState<ColumnMeta[]>([]);
@@ -72,6 +73,12 @@ export default function TableView({ tab }: Props) {
   const handleRefresh = () => {
     loadData(page, where, orderBy);
   };
+
+  // Cmd+R refresh
+  useEffect(() => {
+    if (!isActive) return;
+    return window.electronAPI.onRefresh(() => handleRefresh());
+  }, [isActive, page, where, orderBy]);
 
   const handleSort = (column: string) => {
     let newSort: { column: string; direction: 'ASC' | 'DESC' } | null;

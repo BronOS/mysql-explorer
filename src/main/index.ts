@@ -56,13 +56,11 @@ const createWindow = () => {
 
   mainWindow.on('close', () => saveWindowState(mainWindow));
 
-  // Disable Cmd+R / Ctrl+R / F5 reload
+  // Intercept Cmd+R / Ctrl+R / F5 — send refresh to renderer instead of reloading
   mainWindow.webContents.on('before-input-event', (event, input) => {
-    if (input.key === 'r' && (input.meta || input.control) && !input.shift) {
+    if ((input.key === 'r' && (input.meta || input.control) && !input.shift) || input.key === 'F5') {
       event.preventDefault();
-    }
-    if (input.key === 'F5') {
-      event.preventDefault();
+      mainWindow.webContents.send('app:refresh');
     }
   });
 

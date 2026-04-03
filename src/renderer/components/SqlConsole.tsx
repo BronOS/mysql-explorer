@@ -277,6 +277,12 @@ export default function SqlConsole({ tab, isActive }: Props) {
     { key: 'Ctrl-Space', run: (view) => { columnOnlyMode.current = true; startCompletion(view); return true; } },
   ])), []);
 
+  // Cmd+R runs query
+  useEffect(() => {
+    if (!isActive) return;
+    return window.electronAPI.onRefresh(() => handleRunRef.current());
+  }, [isActive]);
+
   const schemaObj = completionSchema();
 
   // Build full column map: { tableName: [col1, col2, ...] }

@@ -39,6 +39,12 @@ const electronAPI = {
 
   // Import
   importDataGrip: () => ipcRenderer.invoke('import:datagrip'),
+
+  // Events
+  onRefresh: (callback: () => void) => {
+    ipcRenderer.on('app:refresh', callback);
+    return () => { ipcRenderer.removeListener('app:refresh', callback); };
+  },
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);
