@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useEffect, useRef } from 'react';
 import { TabInfo, ConnectionConfig, SchemaTree } from '../../shared/types';
 
 function randomId(): string {
@@ -145,8 +145,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     status: null,
   });
 
-  // Persist tabs whenever they change
+  // Persist tabs whenever they change (skip initial empty render)
+  const tabsInitialized = useRef(false);
   useEffect(() => {
+    // Don't overwrite saved tabs with empty state on first render
+    if (!tabsInitialized.current) {
+      tabsInitialized.current = true;
+      if (state.tabs.length === 0) return; // skip persisting empty initial state
+    }
     persistTabs(state.tabs, state.activeTabId);
   }, [state.tabs, state.activeTabId]);
 
