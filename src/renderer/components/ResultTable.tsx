@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useRef } from 'react';
+import { useMemo, useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { useReactTable, getCoreRowModel, flexRender, ColumnDef } from '@tanstack/react-table';
 
 interface Props {
@@ -141,6 +141,30 @@ export default function ResultTable({ columns, rows }: Props) {
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const containerRefResult = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const [colWidths, setColWidths] = useState<number[]>([]);
+
+  const handleBodyScroll = () => {
+    if (headerRef.current && bodyRef.current) {
+      headerRef.current.scrollLeft = bodyRef.current.scrollLeft;
+    }
+  };
+
+  useLayoutEffect(() => {
+    if (!bodyRef.current || colWidths.length > 0) return;
+    const firstRow = bodyRef.current.querySelector('tbody tr');
+    if (!firstRow) return;
+    const widths = Array.from(firstRow.children).map(td => (td as HTMLElement).offsetWidth);
+    if (widths.length > 0) setColWidths(widths);
+  }, [rows]);
+
+  const hasWidths = colWidths.length > 0;
+  const totalWidth = hasWidths ? colWidths.reduce((a, b) => a + b, 0) : undefined;
+  const tableStyle = totalWidth ? { width: totalWidth, tableLayout: 'fixed' as const } : undefined;
+  const colGroup = hasWidths ? (
+    <colgroup>{colWidths.map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
+  ) : null;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
@@ -152,8 +176,9 @@ export default function ResultTable({ columns, rows }: Props) {
   return (
     <div className="result-table-container" ref={containerRefResult} tabIndex={-1} onKeyDown={handleKeyDown} onClick={() => containerRefResult.current?.focus()}>
       {copyFeedback && <div className="copy-feedback">{copyFeedback}</div>}
-      <div className="datagrid-wrapper" onClick={() => setContextMenu(null)}>
-        <table className="datagrid">
+      <div className="datagrid-header" ref={headerRef}>
+        <table className="datagrid" style={tableStyle}>
+          {colGroup}
           <thead>
             {table.getHeaderGroups().map(hg => (
               <tr key={hg.id}>
@@ -163,6 +188,11 @@ export default function ResultTable({ columns, rows }: Props) {
               </tr>
             ))}
           </thead>
+        </table>
+      </div>
+      <div className="datagrid-wrapper" ref={bodyRef} onScroll={handleBodyScroll} onClick={() => setContextMenu(null)}>
+        <table className="datagrid" style={tableStyle}>
+          {colGroup}
           <tbody>
             {table.getRowModel().rows.map((row, rowIdx) => (
               <tr
@@ -171,7 +201,6 @@ export default function ResultTable({ columns, rows }: Props) {
                 onClick={(e) => handleRowClick(rowIdx, e)}
                 onContextMenu={(e) => {
                   e.preventDefault();
-                  // If right-clicked row is already selected, keep selection
                   if (!selectedRows.has(rowIdx)) {
                     setSelectedRows(new Set([rowIdx]));
                     setLastClickedRow(rowIdx);
