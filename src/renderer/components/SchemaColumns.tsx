@@ -7,6 +7,7 @@ interface Props {
   connectionId: string;
   database: string;
   table: string;
+  isActive?: boolean;
   onSchemaChanged: () => void;
 }
 
@@ -116,7 +117,7 @@ function buildColumnDef(col: FullColumnInfo): string {
   return parts.join(' ');
 }
 
-export default function SchemaColumns({ connectionId, database, table, onSchemaChanged }: Props) {
+export default function SchemaColumns({ connectionId, database, table, isActive, onSchemaChanged }: Props) {
   const ipc = useIpc();
   const { setStatus } = useAppContext();
 
@@ -139,7 +140,10 @@ export default function SchemaColumns({ connectionId, database, table, onSchemaC
     }
   };
 
-  useEffect(() => { load(); }, [connectionId, database, table]);
+  const loaded = useRef(false);
+  useEffect(() => {
+    if (isActive && !loaded.current) { loaded.current = true; load(); }
+  }, [isActive, connectionId, database, table]);
 
   const hasPending = changes.size > 0 || drafts.length > 0;
 

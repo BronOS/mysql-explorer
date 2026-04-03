@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useIpc } from '../hooks/use-ipc';
 import { useAppContext } from '../context/app-context';
 import { IndexInfo } from '../../shared/types';
@@ -9,6 +9,7 @@ interface Props {
   database: string;
   table: string;
   columnNames: string[];
+  isActive?: boolean;
   onSchemaChanged: () => void;
 }
 
@@ -17,7 +18,7 @@ interface DialogState {
   row?: IndexInfo;
 }
 
-export default function SchemaIndexes({ connectionId, database, table, columnNames, onSchemaChanged }: Props) {
+export default function SchemaIndexes({ connectionId, database, table, columnNames, isActive, onSchemaChanged }: Props) {
   const ipc = useIpc();
   const { setStatus } = useAppContext();
 
@@ -37,7 +38,10 @@ export default function SchemaIndexes({ connectionId, database, table, columnNam
     }
   };
 
-  useEffect(() => { load(); }, [connectionId, database, table]);
+  const loaded = useRef(false);
+  useEffect(() => {
+    if (isActive && !loaded.current) { loaded.current = true; load(); }
+  }, [isActive, connectionId, database, table]);
 
   const buildIndexModifier = (data: { name: string; type: string; columns: string[]; unique: boolean }): string => {
     const cols = data.columns.map(c => `\`${c}\``).join(', ');

@@ -29,12 +29,15 @@ export default function SchemaView({ tab, isActive }: Props) {
       .catch(() => {});
   };
 
-  // Load column names on mount for the index dialog
+  // Load column names when tab becomes active
+  const colNamesLoaded = useRef(false);
   useEffect(() => {
+    if (!isActive || colNamesLoaded.current) return;
+    colNamesLoaded.current = true;
     ipc.schemaFullColumns(tab.connectionId, tab.database!, tab.table!)
       .then((cols: FullColumnInfo[]) => setColumnNames(cols.map(c => c.field)))
       .catch(() => {});
-  }, [tab.connectionId, tab.database, tab.table]);
+  }, [isActive, tab.connectionId, tab.database, tab.table]);
 
   // Cmd+R refresh
   useEffect(() => {
@@ -66,19 +69,19 @@ export default function SchemaView({ tab, isActive }: Props) {
   return (
     <div className="schema-view" ref={containerRef}>
       <div style={{ height: divider1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <SchemaColumns connectionId={tab.connectionId} database={tab.database!} table={tab.table!} onSchemaChanged={handleSchemaChanged} />
+        <SchemaColumns connectionId={tab.connectionId} database={tab.database!} table={tab.table!} isActive={isActive} onSchemaChanged={handleSchemaChanged} />
       </div>
       <div className="sql-resizer" onMouseDown={() => { dragging.current = 1; document.body.style.cursor = 'row-resize'; }}>
         <span>⋯⋯⋯</span>
       </div>
       <div style={{ height: divider2 - divider1 - 4, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <SchemaIndexes connectionId={tab.connectionId} database={tab.database!} table={tab.table!} columnNames={columnNames} onSchemaChanged={handleSchemaChanged} />
+        <SchemaIndexes connectionId={tab.connectionId} database={tab.database!} table={tab.table!} columnNames={columnNames} isActive={isActive} onSchemaChanged={handleSchemaChanged} />
       </div>
       <div className="sql-resizer" onMouseDown={() => { dragging.current = 2; document.body.style.cursor = 'row-resize'; }}>
         <span>⋯⋯⋯</span>
       </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <SchemaDDL connectionId={tab.connectionId} database={tab.database!} table={tab.table!} refreshTrigger={refreshTrigger} />
+        <SchemaDDL connectionId={tab.connectionId} database={tab.database!} table={tab.table!} isActive={isActive} refreshTrigger={refreshTrigger} />
       </div>
     </div>
   );

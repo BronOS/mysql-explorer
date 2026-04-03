@@ -1,22 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useIpc } from '../hooks/use-ipc';
 
 interface Props {
   connectionId: string;
   database: string;
   table: string;
+  isActive?: boolean;
   refreshTrigger: number;
 }
 
-export default function SchemaDDL({ connectionId, database, table, refreshTrigger }: Props) {
+export default function SchemaDDL({ connectionId, database, table, isActive, refreshTrigger }: Props) {
   const ipc = useIpc();
   const [ddl, setDdl] = useState('');
+  const loaded = useRef(false);
 
   useEffect(() => {
+    if (!isActive && !loaded.current) return;
+    loaded.current = true;
     ipc.schemaCreateTable(connectionId, database, table)
       .then((text: string) => setDdl(text))
       .catch(() => setDdl('-- Failed to load DDL'));
-  }, [connectionId, database, table, refreshTrigger]);
+  }, [connectionId, database, table, refreshTrigger, isActive]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(ddl);
