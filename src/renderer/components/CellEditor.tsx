@@ -45,8 +45,10 @@ export default function CellEditor({ value, column, editable, onSave, onOpenText
           className="select cell-select"
           value={isNull ? '' : String(value)}
           onChange={e => { onSave(e.target.value || null); setEditing(false); }}
-          onBlur={() => setEditing(false)}
+          onBlur={() => setTimeout(() => setEditing(false), 150)}
           onKeyDown={e => { if (e.key === 'Escape') setEditing(false); }}
+          onClick={e => e.stopPropagation()}
+          onMouseDown={e => e.stopPropagation()}
         >
           {column.nullable && <option value="">NULL</option>}
           {column.enumValues.map(v => <option key={v} value={v}>{v}</option>)}
