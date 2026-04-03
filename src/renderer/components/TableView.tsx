@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useIpc } from '../hooks/use-ipc';
 import { useAppContext } from '../context/app-context';
+import { getUiState, setUiState, loadUiStateAsync } from '../hooks/use-ui-state';
 import { ColumnMeta, TabInfo } from '../../shared/types';
 import FilterTopbar from './FilterTopbar';
 import DataGrid from './DataGrid';
@@ -22,7 +23,7 @@ export default function TableView({ tab, isActive }: Props) {
   const [page, setPage] = useState(1);
   const [where, setWhere] = useState('');
   const [orderBy, setOrderBy] = useState<{ column: string; direction: 'ASC' | 'DESC' } | null>(null);
-  const [saveMode, setSaveMode] = useState<'auto' | 'bulk'>(() => (localStorage.getItem('saveMode') as 'auto' | 'bulk') || 'auto');
+  const [saveMode, setSaveMode] = useState<'auto' | 'bulk'>('auto');
   const [pendingChanges, setPendingChanges] = useState<Map<string, unknown>>(new Map());
   const [draftRows, setDraftRows] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,6 +57,11 @@ export default function TableView({ tab, isActive }: Props) {
       setLoading(false);
     }
   }, [tab.connectionId, tab.database, tab.table, columns.length, rows.length]);
+
+  // Load save mode from disk
+  useEffect(() => {
+    loadUiStateAsync().then(s => { if (s.saveMode) setSaveMode(s.saveMode); });
+  }, []);
 
   const dataLoaded = useRef(false);
   useEffect(() => {
@@ -202,7 +208,7 @@ export default function TableView({ tab, isActive }: Props) {
         columns={columns}
         onFilterChange={handleFilterChange}
         saveMode={saveMode}
-        onSaveModeChange={(mode) => { setSaveMode(mode); localStorage.setItem('saveMode', mode); }}
+        onSaveModeChange={(mode) => { setSaveMode(mode); setUiState('saveMode', mode); }}
         onRefresh={handleRefresh}
         onAddRow={handleAddRow}
       />

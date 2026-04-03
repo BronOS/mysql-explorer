@@ -7,6 +7,7 @@ import { Prec, StateField, EditorState } from '@codemirror/state';
 import { autocompletion, CompletionContext, CompletionResult, Completion, startCompletion, completionStatus } from '@codemirror/autocomplete';
 import { format as formatSql } from 'sql-formatter';
 import { useIpc } from '../hooks/use-ipc';
+import { getUiState, setUiState, loadUiStateAsync } from '../hooks/use-ui-state';
 import { useDebounce } from '../hooks/use-debounce';
 import { useAppContext } from '../context/app-context';
 import { TabInfo, QueryResult } from '../../shared/types';
@@ -122,8 +123,8 @@ export default function SqlConsole({ tab, isActive }: Props) {
   const [result, setResult] = useState<QueryResult | null>(null);
   const [resultPage, setResultPage] = useState(1);
   const [running, setRunning] = useState(false);
-  const [selectedDb, setSelectedDb] = useState(() => localStorage.getItem(`consoleDb:${tab.connectionId}`) || '');
-  const [dividerY, setDividerY] = useState(() => Number(localStorage.getItem(`consoleDivider`)) || 250);
+  const [selectedDb, setSelectedDb] = useState('');
+  const [dividerY, setDividerY] = useState(250);
   const dragging = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<ReactCodeMirrorRef>(null);
@@ -135,6 +136,14 @@ export default function SqlConsole({ tab, isActive }: Props) {
       setTimeout(() => editorRef.current?.view?.focus(), 50);
     }
   }, [isActive]);
+
+  // Load persisted UI state (selected db, divider)
+  useEffect(() => {
+    loadUiStateAsync().then(s => {
+      if (s[`consoleDb:${tab.connectionId}`]) setSelectedDb(s[`consoleDb:${tab.connectionId}`]);
+      if (s.consoleDivider) setDividerY(s.consoleDivider);
+    });
+  }, [tab.connectionId]);
 
   // Fetch databases for this connection if not in schema yet (only when active)
   useEffect(() => {
@@ -173,7 +182,7 @@ export default function SqlConsole({ tab, isActive }: Props) {
 
   const handleDbChange = async (db: string) => {
     setSelectedDb(db);
-    localStorage.setItem(`consoleDb:${tab.connectionId}`, db);
+    setUiState(`consoleDb:${tab.connectionId}`, db);
     if (db) await ipc.queryUseDatabase(tab.connectionId, db);
   };
 
@@ -428,7 +437,7 @@ export default function SqlConsole({ tab, isActive }: Props) {
       setDividerY(y);
     };
     const handleMouseUp = () => {
-      if (dragging.current) localStorage.setItem(`consoleDivider`, String(dividerRef.current));
+      if (dragging.current) setUiState('consoleDivider', dividerRef.current);
       dragging.current = false;
     };
     window.addEventListener('mousemove', handleMouseMove);

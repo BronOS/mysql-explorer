@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAppContext } from './context/app-context';
+import { getUiState, setUiState, loadUiStateAsync } from './hooks/use-ui-state';
 import Sidebar from './components/Sidebar';
 import TabBar from './components/TabBar';
 import TableView from './components/TableView';
@@ -33,7 +34,7 @@ function StatusBar() {
 export default function App() {
   const { tabs, activeTabId, setActiveTab } = useAppContext();
   const activeTab = tabs.find(t => t.id === activeTabId);
-  const [sidebarWidth, setSidebarWidth] = useState(() => Number(localStorage.getItem('sidebarWidth')) || 240);
+  const [sidebarWidth, setSidebarWidth] = useState(240);
   const dragging = useRef(false);
 
   useEffect(() => {
@@ -50,8 +51,13 @@ export default function App() {
     };
   }, []);
 
+  // Load sidebar width from disk
   useEffect(() => {
-    localStorage.setItem('sidebarWidth', String(sidebarWidth));
+    loadUiStateAsync().then(s => { if (s.sidebarWidth) setSidebarWidth(s.sidebarWidth); });
+  }, []);
+
+  useEffect(() => {
+    setUiState('sidebarWidth', sidebarWidth);
   }, [sidebarWidth]);
 
   // Global keyboard shortcuts
