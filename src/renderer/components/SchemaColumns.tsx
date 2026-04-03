@@ -183,8 +183,14 @@ export default function SchemaColumns({ connectionId, database, table, isActive,
 
     // ADD COLUMN for drafts
     for (const draft of drafts) {
+      if (!draft.field) continue;
       const def = buildColumnDef(draft);
-      stmts.push(`ALTER TABLE \`${database}\`.\`${table}\` ADD COLUMN ${def}`);
+      let sql = `ALTER TABLE \`${database}\`.\`${table}\` ADD COLUMN ${def}`;
+      // auto_increment requires a key — add PRIMARY KEY if not already present
+      if (draft.extra?.toLowerCase() === 'auto_increment') {
+        sql += `, ADD PRIMARY KEY (\`${draft.field}\`)`;
+      }
+      stmts.push(sql);
     }
 
     if (stmts.length === 0) return;
