@@ -26,6 +26,24 @@ const TYPE_OPTIONS = [
 
 const EXTRA_OPTIONS = ['', 'auto_increment', 'on update current_timestamp()'];
 
+const NUMERIC_TYPES = new Set(['INT', 'BIGINT', 'SMALLINT', 'TINYINT', 'MEDIUMINT', 'DECIMAL', 'FLOAT', 'DOUBLE']);
+const INTEGER_TYPES = new Set(['INT', 'BIGINT', 'SMALLINT', 'TINYINT', 'MEDIUMINT']);
+const STRING_TYPES = new Set(['VARCHAR', 'CHAR', 'TEXT', 'MEDIUMTEXT', 'LONGTEXT', 'ENUM', 'SET']);
+const DATE_TYPES = new Set(['DATE', 'DATETIME', 'TIMESTAMP', 'TIME']);
+
+function typeCapabilities(baseType: string) {
+  const t = baseType.toUpperCase();
+  return {
+    unsigned: NUMERIC_TYPES.has(t),
+    zerofill: NUMERIC_TYPES.has(t),
+    binary: new Set(['VARCHAR', 'CHAR', 'TEXT', 'MEDIUMTEXT', 'LONGTEXT']).has(t),
+    encoding: STRING_TYPES.has(t),
+    collation: STRING_TYPES.has(t),
+    autoIncrement: INTEGER_TYPES.has(t),
+    onUpdate: DATE_TYPES.has(t),
+  };
+}
+
 // key: `fieldName:colName` for originals, `draft:draftId:colName` for drafts
 type ChangeKey = string;
 
@@ -400,26 +418,41 @@ export default function SchemaColumns({ connectionId, database, table, isActive,
           }
           return renderText(col.length, handleChange('length') as (v: string) => void, isModifiedField('length'), 'e.g. 255');
         })()}
-        {/* Unsigned */}
-        {renderCheckbox(col.unsigned, handleChange('unsigned') as (v: boolean) => void, isModifiedField('unsigned'))}
-        {/* Zerofill */}
-        {renderCheckbox(col.zerofill, handleChange('zerofill') as (v: boolean) => void, isModifiedField('zerofill'))}
-        {/* Binary */}
-        {renderCheckbox(col.binary, handleChange('binary') as (v: boolean) => void, isModifiedField('binary'))}
-        {/* Allow Null */}
-        {renderCheckbox(col.nullable, handleChange('nullable') as (v: boolean) => void, isModifiedField('nullable'))}
-        {/* Key (read-only) */}
-        {renderReadonly(col.key)}
-        {/* Default */}
-        {renderText(col.defaultValue ?? '', (v) => handleChange('defaultValue')(v || null), isModifiedField('defaultValue'), 'NULL')}
-        {/* Encoding */}
-        {renderText(col.encoding, handleChange('encoding') as (v: string) => void, isModifiedField('encoding'))}
-        {/* Extra */}
-        {renderDropdown(col.extra, EXTRA_OPTIONS, handleChange('extra') as (v: string) => void, isModifiedField('extra'))}
-        {/* Collation */}
-        {renderText(col.collation, handleChange('collation') as (v: string) => void, isModifiedField('collation'))}
-        {/* Comment */}
-        {renderText(col.comment, handleChange('comment') as (v: string) => void, isModifiedField('comment'))}
+        {(() => {
+          const caps = typeCapabilities(col.baseType || col.type);
+          // Filter extra options based on type
+          const extraOpts = EXTRA_OPTIONS.filter(o => {
+            if (o === 'auto_increment') return caps.autoIncrement;
+            if (o === 'on update current_timestamp()') return caps.onUpdate;
+            return true; // empty option always shown
+          });
+          return (<>
+            {/* Unsigned */}
+            {renderCheckbox(col.unsigned, handleChange('unsigned') as (v: boolean) => void, isModifiedField('unsigned'), !caps.unsigned)}
+            {/* Zerofill */}
+            {renderCheckbox(col.zerofill, handleChange('zerofill') as (v: boolean) => void, isModifiedField('zerofill'), !caps.zerofill)}
+            {/* Binary */}
+            {renderCheckbox(col.binary, handleChange('binary') as (v: boolean) => void, isModifiedField('binary'), !caps.binary)}
+            {/* Allow Null */}
+            {renderCheckbox(col.nullable, handleChange('nullable') as (v: boolean) => void, isModifiedField('nullable'))}
+            {/* Key (read-only) */}
+            {renderReadonly(col.key)}
+            {/* Default */}
+            {renderText(col.defaultValue ?? '', (v) => handleChange('defaultValue')(v || null), isModifiedField('defaultValue'), 'NULL')}
+            {/* Encoding */}
+            {caps.encoding
+              ? renderText(col.encoding, handleChange('encoding') as (v: string) => void, isModifiedField('encoding'))
+              : <td><span className="cell-readonly cell-null">—</span></td>}
+            {/* Extra */}
+            {renderDropdown(col.extra, extraOpts, handleChange('extra') as (v: string) => void, isModifiedField('extra'))}
+            {/* Collation */}
+            {caps.collation
+              ? renderText(col.collation, handleChange('collation') as (v: string) => void, isModifiedField('collation'))
+              : <td><span className="cell-readonly cell-null">—</span></td>}
+            {/* Comment */}
+            {renderText(col.comment, handleChange('comment') as (v: string) => void, isModifiedField('comment'))}
+          </>);
+        })()}
         {/* Actions */}
         <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
           {isDraft ? (
