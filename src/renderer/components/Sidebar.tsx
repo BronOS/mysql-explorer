@@ -8,6 +8,7 @@ export default function Sidebar({ width }: { width: number }) {
   const [showDialog, setShowDialog] = useState(false);
   const [editingConnection, setEditingConnection] = useState<ConnectionConfig | undefined>();
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; connectionId: string } | null>(null);
+  const [tableContextMenu, setTableContextMenu] = useState<{ x: number; y: number; conn: ConnectionConfig; database: string; table: string } | null>(null);
   const [expandedConns, setExpandedConns] = useState<Set<string>>(new Set());
   const [expandedDbs, setExpandedDbs] = useState<Set<string>>(new Set());
   const [connecting, setConnecting] = useState<Set<string>>(new Set());
@@ -144,7 +145,7 @@ export default function Sidebar({ width }: { width: number }) {
     };
     init();
 
-    const handler = () => setContextMenu(null);
+    const handler = () => { setContextMenu(null); setTableContextMenu(null); };
     window.addEventListener('click', handler);
     return () => window.removeEventListener('click', handler);
   }, []);
@@ -318,7 +319,7 @@ export default function Sidebar({ width }: { width: number }) {
                   const isActive = activeTab?.type === 'table' && activeTab.connectionId === conn.id && activeTab.database === db.name && activeTab.table === table;
                   return (
                     <div key={table} className="tree-node-indent" ref={isActive ? activeNodeRef : undefined}>
-                      <div className={`tree-node ${isActive ? 'tree-node-active' : ''}`} onClick={() => handleTableClick(conn, db.name, table)} title={table}>
+                      <div className={`tree-node ${isActive ? 'tree-node-active' : ''}`} onClick={() => handleTableClick(conn, db.name, table)} onContextMenu={(e) => { e.preventDefault(); setTableContextMenu({ x: e.clientX, y: e.clientY, conn, database: db.name, table }); }} title={table}>
                         <span style={{ width: 12 }}></span>
                         <span>📋</span>
                         <span>{table}</span>
@@ -348,6 +349,19 @@ export default function Sidebar({ width }: { width: number }) {
           <div className="context-menu-item" onClick={() => handleContextAction('edit')}>Edit</div>
           <div className="context-menu-item" onClick={() => handleContextAction('disconnect')}>Disconnect</div>
           <div className="context-menu-item" onClick={() => handleContextAction('delete')} style={{ color: '#ef4444' }}>Delete</div>
+        </div>
+      )}
+
+      {tableContextMenu && (
+        <div className="context-menu" style={{ left: tableContextMenu.x, top: tableContextMenu.y }}>
+          <div className="context-menu-item" onClick={() => {
+            openTab({ connectionId: tableContextMenu.conn.id, connectionName: tableContextMenu.conn.name, connectionColor: tableContextMenu.conn.color, type: 'table', database: tableContextMenu.database, table: tableContextMenu.table });
+            setTableContextMenu(null);
+          }}>Open Table</div>
+          <div className="context-menu-item" onClick={() => {
+            openTab({ connectionId: tableContextMenu.conn.id, connectionName: tableContextMenu.conn.name, connectionColor: tableContextMenu.conn.color, type: 'schema', database: tableContextMenu.database, table: tableContextMenu.table });
+            setTableContextMenu(null);
+          }}>View Schema</div>
         </div>
       )}
     </div>

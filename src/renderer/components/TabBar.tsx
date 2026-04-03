@@ -58,7 +58,7 @@ export default function TabBar() {
             {tab.connectionName.slice(0, 4)}
           </span>
           <span className="tab-label">
-            {tab.type === 'console' ? '⌨️ SQL Console' : `📋 ${tab.table}`}
+            {tab.type === 'console' ? '⌨️ SQL Console' : tab.type === 'schema' ? `🔧 Schema: ${tab.table}` : `📋 ${tab.table}`}
           </span>
         </div>
       ))}

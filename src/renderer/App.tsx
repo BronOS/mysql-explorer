@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import TabBar from './components/TabBar';
 import TableView from './components/TableView';
 import SqlConsole from './components/SqlConsole';
+import SchemaView from './components/SchemaView';
 
 function StatusBar() {
   const { status, tabs, activeTabId, connections } = useAppContext();
@@ -96,6 +97,7 @@ export default function App() {
             <div key={tab.id} className="tab-panel" style={{ display: tab.id === activeTabId ? 'flex' : 'none' }}>
               {tab.type === 'table' && <TableView tab={tab} isActive={tab.id === activeTabId} />}
               {tab.type === 'console' && <SqlConsole tab={tab} isActive={tab.id === activeTabId} />}
+              {tab.type === 'schema' && <SchemaView tab={tab} isActive={tab.id === activeTabId} />}
             </div>
           ))}
         </div>
