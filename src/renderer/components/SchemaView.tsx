@@ -93,7 +93,7 @@ export default function SchemaView({ tab, isActive }: Props) {
         <span>⋯⋯⋯</span>
       </div>
       <div style={{ height: divider2 - divider1 - 4, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <SchemaIndexes connectionId={tab.connectionId} database={tab.database!} table={tab.table!} columnNames={columnNames} isActive={isActive} onSchemaChanged={handleSchemaChanged} />
+        <SchemaIndexes connectionId={tab.connectionId} database={tab.database!} table={tab.table!} columnNames={columnNames} isActive={isActive} refreshTrigger={refreshTrigger} onSchemaChanged={handleSchemaChanged} />
       </div>
       <div className="sql-resizer" onMouseDown={() => { dragging.current = 2; document.body.style.cursor = 'row-resize'; }}>
         <span>⋯⋯⋯</span>

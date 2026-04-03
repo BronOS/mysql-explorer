@@ -10,6 +10,7 @@ interface Props {
   table: string;
   columnNames: string[];
   isActive?: boolean;
+  refreshTrigger?: number;
   onSchemaChanged: () => void;
 }
 
@@ -18,7 +19,7 @@ interface DialogState {
   row?: IndexInfo;
 }
 
-export default function SchemaIndexes({ connectionId, database, table, columnNames, isActive, onSchemaChanged }: Props) {
+export default function SchemaIndexes({ connectionId, database, table, columnNames, isActive, refreshTrigger, onSchemaChanged }: Props) {
   const ipc = useIpc();
   const { setStatus } = useAppContext();
 
@@ -42,6 +43,11 @@ export default function SchemaIndexes({ connectionId, database, table, columnNam
   useEffect(() => {
     if (isActive && !loaded.current) { loaded.current = true; load(); }
   }, [isActive, connectionId, database, table]);
+
+  // Reload when triggered by parent (e.g. column drop, column commit)
+  useEffect(() => {
+    if (loaded.current && refreshTrigger) load();
+  }, [refreshTrigger]);
 
   const buildIndexModifier = (data: { name: string; type: string; columns: string[]; unique: boolean }): string => {
     const cols = data.columns.map(c => `\`${c}\``).join(', ');
