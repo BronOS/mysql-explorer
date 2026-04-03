@@ -52,12 +52,16 @@ export default function App() {
   }, []);
 
   // Load sidebar width from disk
+  const sidebarLoaded = useRef(false);
   useEffect(() => {
-    loadUiStateAsync().then(s => { if (s.sidebarWidth) setSidebarWidth(s.sidebarWidth); });
+    loadUiStateAsync().then(s => {
+      if (s.sidebarWidth) setSidebarWidth(s.sidebarWidth);
+      sidebarLoaded.current = true;
+    });
   }, []);
 
   useEffect(() => {
-    setUiState('sidebarWidth', sidebarWidth);
+    if (sidebarLoaded.current) setUiState('sidebarWidth', sidebarWidth);
   }, [sidebarWidth]);
 
   // Global keyboard shortcuts
