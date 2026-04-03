@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useIpc } from '../hooks/use-ipc';
 import { useAppContext } from '../context/app-context';
 import { IndexInfo } from '../../shared/types';
-import IndexDialog from './IndexDialog';
+import IndexDialog, { IndexData, IndexColumn } from './IndexDialog';
 import ErrorDialog from './ErrorDialog';
 
 interface Props {
@@ -51,15 +51,15 @@ export default function SchemaIndexes({ connectionId, database, table, columnNam
     if (loaded.current && refreshTrigger) load();
   }, [refreshTrigger]);
 
-  const buildIndexModifier = (data: { name: string; type: string; columns: string[]; unique: boolean }): string => {
-    const cols = data.columns.map(c => `\`${c}\``).join(', ');
+  const buildIndexModifier = (data: IndexData): string => {
+    const cols = data.columns.map(c => c.prefixLength ? `\`${c.name}\`(${c.prefixLength})` : `\`${c.name}\``).join(', ');
     const typePrefix = data.type === 'UNIQUE' ? 'UNIQUE INDEX'
       : data.type === 'FULLTEXT' ? 'FULLTEXT INDEX'
       : 'INDEX';
     return `${typePrefix} \`${data.name}\` (${cols})`;
   };
 
-  const handleAdd = async (data: { name: string; type: string; columns: string[]; unique: boolean }) => {
+  const handleAdd = async (data: IndexData) => {
     const modifier = buildIndexModifier(data);
     const sql = `ALTER TABLE \`${database}\`.\`${table}\` ADD ${modifier}`;
     try {
@@ -73,7 +73,7 @@ export default function SchemaIndexes({ connectionId, database, table, columnNam
     }
   };
 
-  const handleEdit = async (oldIndex: IndexInfo, data: { name: string; type: string; columns: string[]; unique: boolean }) => {
+  const handleEdit = async (oldIndex: IndexInfo, data: IndexData) => {
     const dropClause = oldIndex.name === 'PRIMARY'
       ? 'DROP PRIMARY KEY'
       : `DROP INDEX \`${oldIndex.name}\``;
@@ -182,7 +182,7 @@ export default function SchemaIndexes({ connectionId, database, table, columnNam
       {dialog && (
         <IndexDialog
           columns={columnNames}
-          initial={dialog.row ? { name: dialog.row.name, type: dialog.row.type, columns: dialog.row.columns, unique: dialog.row.unique } : undefined}
+          initial={dialog.row ? { name: dialog.row.name, type: dialog.row.type, columns: dialog.row.columns.map(c => ({ name: c })), unique: dialog.row.unique } : undefined}
           onSave={handleSave}
           onClose={() => setDialog(null)}
         />
