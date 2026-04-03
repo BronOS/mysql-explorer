@@ -136,8 +136,9 @@ export default function SqlConsole({ tab, isActive }: Props) {
     }
   }, [isActive]);
 
-  // Fetch databases for this connection if not in schema yet
+  // Fetch databases for this connection if not in schema yet (only when active)
   useEffect(() => {
+    if (!isActive) return;
     const connSchema = schema[tab.connectionId];
     if (connSchema?.loaded) return;
     ipc.schemaDatabases(tab.connectionId).then((dbs: string[]) => {
@@ -148,14 +149,17 @@ export default function SqlConsole({ tab, isActive }: Props) {
         loaded: true,
       });
     }).catch(() => {});
-  }, [tab.connectionId, schema[tab.connectionId]?.loaded]);
+  }, [isActive, tab.connectionId, schema[tab.connectionId]?.loaded]);
 
-  // Load persisted SQL
+  // Load persisted SQL (only once when first active)
+  const sqlLoaded = useRef(false);
   useEffect(() => {
+    if (!isActive || sqlLoaded.current) return;
+    sqlLoaded.current = true;
     ipc.sqlFileLoad(tab.connectionId).then((content: string) => {
       if (content) setCode(content);
     });
-  }, [tab.connectionId]);
+  }, [isActive, tab.connectionId]);
 
   // Debounced save
   const debouncedSave = useDebounce((content: string) => {

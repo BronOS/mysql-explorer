@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useIpc } from '../hooks/use-ipc';
 import { useAppContext } from '../context/app-context';
 import { ColumnMeta, TabInfo } from '../../shared/types';
@@ -57,9 +57,12 @@ export default function TableView({ tab, isActive }: Props) {
     }
   }, [tab.connectionId, tab.database, tab.table, columns.length, rows.length]);
 
+  const dataLoaded = useRef(false);
   useEffect(() => {
+    if (!isActive || dataLoaded.current) return;
+    dataLoaded.current = true;
     loadData(1, '', null);
-  }, [tab.connectionId, tab.database, tab.table]);
+  }, [isActive, tab.connectionId, tab.database, tab.table]);
 
   const handlePageChange = (newPage: number) => {
     loadData(newPage, where, orderBy);
