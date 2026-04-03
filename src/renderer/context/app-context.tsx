@@ -39,6 +39,7 @@ type Action =
   | { type: 'OPEN_TAB'; tab: TabInfo }
   | { type: 'CLOSE_TAB'; tabId: string }
   | { type: 'SET_ACTIVE_TAB'; tabId: string }
+  | { type: 'REORDER_TABS'; fromIndex: number; toIndex: number }
   | { type: 'SET_SCHEMA'; connectionId: string; databases: SchemaTree[string]['databases']; loaded: boolean }
   | { type: 'SET_COLUMNS'; connectionId: string; database: string; columns: { [tableName: string]: string[] } }
   | { type: 'SET_TABLES'; connectionId: string; database: string; tables: string[] };
@@ -69,6 +70,13 @@ function reducer(state: AppState, action: Action): AppState {
         newActiveId = newTabs.length > 0 ? newTabs[newTabs.length - 1].id : null;
       }
       return { ...state, tabs: newTabs, activeTabId: newActiveId };
+    }
+
+    case 'REORDER_TABS': {
+      const newTabs = [...state.tabs];
+      const [moved] = newTabs.splice(action.fromIndex, 1);
+      newTabs.splice(action.toIndex, 0, moved);
+      return { ...state, tabs: newTabs };
     }
 
     case 'SET_ACTIVE_TAB': {
