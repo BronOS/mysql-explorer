@@ -3,6 +3,7 @@ import { useIpc } from '../hooks/use-ipc';
 import { useAppContext } from '../context/app-context';
 import { FullColumnInfo } from '../../shared/types';
 import ErrorDialog from './ErrorDialog';
+import EnumValuesDialog from './EnumValuesDialog';
 
 interface Props {
   connectionId: string;
@@ -95,10 +96,17 @@ function DoubleClickEdit({
 function buildColumnDef(col: FullColumnInfo): string {
   let typePart = col.baseType || col.type;
 
-  // Append length for types that support it
-  const lengthTypes = ['VARCHAR', 'CHAR', 'INT', 'BIGINT', 'SMALLINT', 'TINYINT', 'MEDIUMINT', 'DECIMAL', 'FLOAT', 'DOUBLE', 'BIT'];
-  if (col.length && lengthTypes.some(t => typePart.toUpperCase() === t)) {
-    typePart = `${typePart}(${col.length})`;
+  // Append length/values for types that support it
+  const upperType = typePart.toUpperCase();
+  if (col.length) {
+    if (upperType === 'ENUM' || upperType === 'SET') {
+      typePart = `${typePart}(${col.length})`;
+    } else {
+      const lengthTypes = ['VARCHAR', 'CHAR', 'INT', 'BIGINT', 'SMALLINT', 'TINYINT', 'MEDIUMINT', 'DECIMAL', 'FLOAT', 'DOUBLE', 'BIT'];
+      if (lengthTypes.includes(upperType)) {
+        typePart = `${typePart}(${col.length})`;
+      }
+    }
   }
 
   const parts: string[] = [`\`${col.field}\` ${typePart}`];
@@ -128,6 +136,7 @@ export default function SchemaColumns({ connectionId, database, table, isActive,
   const [changes, setChanges] = useState<Map<ChangeKey, Partial<FullColumnInfo>>>(new Map());
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [enumDialog, setEnumDialog] = useState<{ field: string; isDraft: boolean; draftId?: string; values: string[] } | null>(null);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
@@ -361,8 +370,28 @@ export default function SchemaColumns({ connectionId, database, table, isActive,
         {renderText(col.field, handleChange('field') as (v: string) => void, isModifiedField('field'))}
         {/* Type */}
         {renderDropdown(col.baseType || col.type.replace(/\(.*/, ''), TYPE_OPTIONS, handleChange('baseType') as (v: string) => void, isModifiedField('baseType'))}
-        {/* Length */}
-        {renderText(col.length, handleChange('length') as (v: string) => void, isModifiedField('length'), 'e.g. 255')}
+        {/* Length / Values — adapts based on type */}
+        {(() => {
+          const baseType = (col.baseType || '').toUpperCase();
+          const noLengthTypes = ['TEXT', 'MEDIUMTEXT', 'LONGTEXT', 'BLOB', 'MEDIUMBLOB', 'LONGBLOB', 'JSON', 'DATE', 'DATETIME', 'TIMESTAMP', 'TIME', 'BOOLEAN'];
+          if (noLengthTypes.includes(baseType)) {
+            return <td><span className="cell-readonly cell-null">—</span></td>;
+          }
+          if (baseType === 'ENUM' || baseType === 'SET') {
+            const vals = col.length ? col.length.split("','").map(v => v.replace(/^'|'$/g, '')) : [];
+            return (
+              <td className={isModifiedField('length') ? 'cell-modified' : ''}>
+                <span className="cell-editable" onClick={() => setEnumDialog({ field: col.field, isDraft, draftId, values: vals })}>
+                  {vals.length > 0 ? vals.join(', ') : <span className="cell-null">click to define</span>}
+                </span>
+              </td>
+            );
+          }
+          if (baseType === 'DECIMAL' || baseType === 'FLOAT' || baseType === 'DOUBLE') {
+            return renderText(col.length, handleChange('length') as (v: string) => void, isModifiedField('length'), 'e.g. 10,2');
+          }
+          return renderText(col.length, handleChange('length') as (v: string) => void, isModifiedField('length'), 'e.g. 255');
+        })()}
         {/* Unsigned */}
         {renderCheckbox(col.unsigned, handleChange('unsigned') as (v: boolean) => void, isModifiedField('unsigned'))}
         {/* Zerofill */}
@@ -463,6 +492,20 @@ export default function SchemaColumns({ connectionId, database, table, isActive,
         )}
       </div>
       {errorMsg && <ErrorDialog message={errorMsg} onClose={() => setErrorMsg(null)} />}
+      {enumDialog && (
+        <EnumValuesDialog
+          initial={enumDialog.values}
+          onSave={(vals) => {
+            const lengthVal = vals.map(v => `'${v}'`).join(',');
+            if (enumDialog.isDraft && enumDialog.draftId) {
+              applyDraftChange(enumDialog.draftId, 'length', lengthVal);
+            } else {
+              applyChange(enumDialog.field, 'length', lengthVal);
+            }
+          }}
+          onClose={() => setEnumDialog(null)}
+        />
+      )}
     </div>
   );
 }
