@@ -122,15 +122,19 @@ export default function SchemaColumns({ connectionId, database, table, isActive,
   const { setStatus } = useAppContext();
 
   const [columns, setColumns] = useState<FullColumnInfo[]>([]);
+  const [originalOrder, setOriginalOrder] = useState<string[]>([]); // original field order for diff
   const [drafts, setDrafts] = useState<DraftColumn[]>([]);
   const [changes, setChanges] = useState<Map<ChangeKey, Partial<FullColumnInfo>>>(new Map());
   const [loading, setLoading] = useState(false);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
   const load = async () => {
     setLoading(true);
     try {
       const data = await ipc.schemaFullColumns(connectionId, database, table);
       setColumns(data);
+      setOriginalOrder(data.map((c: FullColumnInfo) => c.field));
       setDrafts([]);
       setChanges(new Map());
     } catch (e: any) {
@@ -145,7 +149,8 @@ export default function SchemaColumns({ connectionId, database, table, isActive,
     if (isActive && !loaded.current) { loaded.current = true; load(); }
   }, [isActive, connectionId, database, table]);
 
-  const hasPending = changes.size > 0 || drafts.length > 0;
+  const orderChanged = columns.length > 0 && originalOrder.length > 0 && columns.some((c, i) => c.field !== originalOrder[i]);
+  const hasPending = changes.size > 0 || drafts.length > 0 || orderChanged;
 
   // Apply a field change to the changes map
   const applyChange = (field: string, colName: keyof FullColumnInfo, value: unknown) => {
@@ -186,11 +191,23 @@ export default function SchemaColumns({ connectionId, database, table, isActive,
       if (!draft.field) continue;
       const def = buildColumnDef(draft);
       let sql = `ALTER TABLE \`${database}\`.\`${table}\` ADD COLUMN ${def}`;
-      // auto_increment requires a key — add PRIMARY KEY if not already present
       if (draft.extra?.toLowerCase() === 'auto_increment') {
         sql += `, ADD PRIMARY KEY (\`${draft.field}\`)`;
       }
       stmts.push(sql);
+    }
+
+    // REORDER columns if order changed
+    if (orderChanged) {
+      // After all modifications/additions, reorder to match current column array
+      const currentOrder = columns.map(c => getMergedColumn(c));
+      for (let i = 0; i < currentOrder.length; i++) {
+        const col = currentOrder[i];
+        if (col.field === originalOrder[i]) continue; // already in place
+        const def = buildColumnDef(col);
+        const position = i === 0 ? 'FIRST' : `AFTER \`${currentOrder[i - 1].field}\``;
+        stmts.push(`ALTER TABLE \`${database}\`.\`${table}\` MODIFY COLUMN ${def} ${position}`);
+      }
     }
 
     if (stmts.length === 0) return;
@@ -302,7 +319,7 @@ export default function SchemaColumns({ connectionId, database, table, isActive,
     </td>
   );
 
-  const renderColumnRow = (col: FullColumnInfo, isDraft: boolean, draftId?: string) => {
+  const renderColumnRow = (col: FullColumnInfo, isDraft: boolean, draftId?: string, rowIndex: number = -1) => {
     const isModifiedField = (f: keyof FullColumnInfo) => {
       if (isDraft) return true;
       const override = changes.get(`field:${col.field}`);
@@ -318,7 +335,26 @@ export default function SchemaColumns({ connectionId, database, table, isActive,
     };
 
     return (
-      <tr key={isDraft ? draftId : col.field} className={isDraft ? 'row-draft' : ''}>
+      <tr
+        key={isDraft ? draftId : col.field}
+        className={`${isDraft ? 'row-draft' : ''} ${dragOverIdx === rowIndex ? 'schema-drag-over' : ''}`}
+        draggable={!isDraft}
+        onDragStart={() => setDragIdx(rowIndex)}
+        onDragOver={(e) => { e.preventDefault(); if (dragIdx !== null && dragIdx !== rowIndex) setDragOverIdx(rowIndex); }}
+        onDrop={() => {
+          if (dragIdx !== null && dragIdx !== rowIndex && !isDraft) {
+            setColumns(prev => {
+              const next = [...prev];
+              const [moved] = next.splice(dragIdx, 1);
+              next.splice(rowIndex, 0, moved);
+              return next;
+            });
+          }
+          setDragIdx(null);
+          setDragOverIdx(null);
+        }}
+        onDragEnd={() => { setDragIdx(null); setDragOverIdx(null); }}
+      >
         {/* Field */}
         {renderText(col.field, handleChange('field') as (v: string) => void, isModifiedField('field'))}
         {/* Type */}
@@ -411,8 +447,8 @@ export default function SchemaColumns({ connectionId, database, table, isActive,
               </tr>
             </thead>
             <tbody>
-              {columns.map(col => renderColumnRow(getMergedColumn(col), false))}
-              {drafts.map(draft => renderColumnRow(draft, true, draft.__draftId))}
+              {columns.map((col, idx) => renderColumnRow(getMergedColumn(col), false, undefined, idx))}
+              {drafts.map(draft => renderColumnRow(draft, true, draft.__draftId, -1))}
             </tbody>
           </table>
         )}
