@@ -413,15 +413,22 @@ export default function SchemaColumns({ connectionId, database, table, isActive,
         <span className="schema-zone-title">Columns</span>
         <div className="schema-zone-actions">
           <button className="btn btn-secondary" onClick={handleAddColumn} title="Add column">+ Add Column</button>
-          <button className="btn btn-secondary" onClick={load} title="Refresh columns">Refresh</button>
-          {hasPending && (
-            <>
-              <button className="btn btn-primary" onClick={handleCommit} title="Commit all pending changes">Commit</button>
-              <button className="btn btn-secondary" onClick={handleDiscard} title="Discard all pending changes">Discard</button>
-            </>
-          )}
+          <button className="btn btn-secondary" onClick={load} title="Refresh columns">↻</button>
         </div>
       </div>
+      {hasPending && (
+        <div className="bulk-commit-bar">
+          <span>
+            {changes.size > 0 && `${changes.size} modified`}
+            {changes.size > 0 && drafts.length > 0 && ', '}
+            {drafts.length > 0 && `${drafts.length} new`}
+            {(changes.size > 0 || drafts.length > 0) && orderChanged && ', '}
+            {orderChanged && 'reordered'}
+          </span>
+          <button className="btn btn-primary" onClick={handleCommit}>Commit</button>
+          <button className="btn btn-secondary" onClick={handleDiscard}>Discard</button>
+        </div>
+      )}
 
       <div className="datagrid-wrapper">
         {loading ? (
