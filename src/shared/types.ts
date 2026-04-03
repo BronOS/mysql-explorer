@@ -51,7 +51,7 @@ export interface TabInfo {
   connectionId: string;
   connectionName: string;
   connectionColor: string;
-  type: 'table' | 'console';
+  type: 'table' | 'console' | 'schema';
   database?: string;
   table?: string;
   lastAccessed: number;
@@ -62,6 +62,30 @@ export interface FilterCondition {
   operator: '=' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE' | 'IS NULL' | 'IS NOT NULL';
   value: string;
   logic: 'AND' | 'OR';
+}
+
+export interface FullColumnInfo {
+  field: string;
+  type: string;
+  baseType: string;
+  length: string;
+  unsigned: boolean;
+  zerofill: boolean;
+  binary: boolean;
+  nullable: boolean;
+  key: string;
+  defaultValue: string | null;
+  extra: string;
+  encoding: string;
+  collation: string;
+  comment: string;
+}
+
+export interface IndexInfo {
+  name: string;
+  type: string;
+  columns: string[];
+  unique: boolean;
 }
 
 export interface SchemaTree {
