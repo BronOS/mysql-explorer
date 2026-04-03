@@ -60,7 +60,9 @@ function reducer(state: AppState, action: Action): AppState {
         newTabs.splice(idx, 1);
       }
       newTabs.push(action.tab);
-      return { ...state, tabs: newTabs, activeTabId: action.tab.id };
+      const s1 = { ...state, tabs: newTabs, activeTabId: action.tab.id };
+      persistTabs(s1.tabs, s1.activeTabId);
+      return s1;
     }
 
     case 'CLOSE_TAB': {
@@ -69,21 +71,27 @@ function reducer(state: AppState, action: Action): AppState {
       if (state.activeTabId === action.tabId) {
         newActiveId = newTabs.length > 0 ? newTabs[newTabs.length - 1].id : null;
       }
-      return { ...state, tabs: newTabs, activeTabId: newActiveId };
+      const s2 = { ...state, tabs: newTabs, activeTabId: newActiveId };
+      persistTabs(s2.tabs, s2.activeTabId);
+      return s2;
     }
 
     case 'REORDER_TABS': {
       const newTabs = [...state.tabs];
       const [moved] = newTabs.splice(action.fromIndex, 1);
       newTabs.splice(action.toIndex, 0, moved);
-      return { ...state, tabs: newTabs };
+      const s3 = { ...state, tabs: newTabs };
+      persistTabs(s3.tabs, s3.activeTabId);
+      return s3;
     }
 
     case 'SET_ACTIVE_TAB': {
       const tabs = state.tabs.map(t =>
         t.id === action.tabId ? { ...t, lastAccessed: Date.now() } : t
       );
-      return { ...state, tabs, activeTabId: action.tabId };
+      const s4 = { ...state, tabs, activeTabId: action.tabId };
+      persistTabs(s4.tabs, s4.activeTabId);
+      return s4;
     }
 
     case 'SET_SCHEMA': {
@@ -145,16 +153,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     status: null,
   });
 
-  // Persist tabs whenever they change (skip initial empty render)
-  const tabsInitialized = useRef(false);
-  useEffect(() => {
-    // Don't overwrite saved tabs with empty state on first render
-    if (!tabsInitialized.current) {
-      tabsInitialized.current = true;
-      if (state.tabs.length === 0) return; // skip persisting empty initial state
-    }
-    persistTabs(state.tabs, state.activeTabId);
-  }, [state.tabs, state.activeTabId]);
+  // Tab persistence is handled directly in the reducer actions (OPEN_TAB, CLOSE_TAB, etc.)
 
   const openTab = useCallback((opts: Omit<TabInfo, 'id' | 'lastAccessed'>) => {
     const existing = state.tabs.find(t =>
