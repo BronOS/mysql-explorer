@@ -2,14 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { useIpc } from '../hooks/use-ipc';
 import { useAppContext } from '../context/app-context';
 import { IndexInfo } from '../../shared/types';
-import IndexDialog, { IndexData, IndexColumn } from './IndexDialog';
+import IndexDialog, { IndexData, IndexColumn, ColumnInfo } from './IndexDialog';
 import ErrorDialog from './ErrorDialog';
 
 interface Props {
   connectionId: string;
   database: string;
   table: string;
-  columnNames: string[];
+  columnInfos: ColumnInfo[];
   isActive?: boolean;
   refreshTrigger?: number;
   onSchemaChanged: () => void;
@@ -20,7 +20,7 @@ interface DialogState {
   row?: IndexInfo;
 }
 
-export default function SchemaIndexes({ connectionId, database, table, columnNames, isActive, refreshTrigger, onSchemaChanged }: Props) {
+export default function SchemaIndexes({ connectionId, database, table, columnInfos, isActive, refreshTrigger, onSchemaChanged }: Props) {
   const ipc = useIpc();
   const { setStatus } = useAppContext();
 
@@ -181,7 +181,7 @@ export default function SchemaIndexes({ connectionId, database, table, columnNam
 
       {dialog && (
         <IndexDialog
-          columns={columnNames}
+          columns={columnInfos}
           initial={dialog.row ? { name: dialog.row.name, type: dialog.row.type, columns: dialog.row.columns.map(c => ({ name: c })), unique: dialog.row.unique } : undefined}
           onSave={handleSave}
           onClose={() => setDialog(null)}

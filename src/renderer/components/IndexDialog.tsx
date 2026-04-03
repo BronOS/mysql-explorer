@@ -12,11 +12,32 @@ export interface IndexData {
   unique: boolean;
 }
 
+export interface ColumnInfo {
+  name: string;
+  type: string; // e.g. "varchar(255)", "mediumtext", "int(11)"
+}
+
 interface Props {
-  columns: string[];
+  columns: ColumnInfo[];
   initial?: IndexData;
   onSave: (data: IndexData) => void;
   onClose: () => void;
+}
+
+const NEEDS_PREFIX = new Set(['TEXT', 'MEDIUMTEXT', 'LONGTEXT', 'BLOB', 'MEDIUMBLOB', 'LONGBLOB']);
+
+function needsPrefix(type: string): boolean {
+  const base = type.replace(/\(.*/, '').toUpperCase();
+  return NEEDS_PREFIX.has(base);
+}
+
+function suggestPrefix(type: string): number | undefined {
+  const base = type.replace(/\(.*/, '').toUpperCase();
+  if (NEEDS_PREFIX.has(base)) return 191;
+  // Long varchar
+  const match = type.match(/varchar\((\d+)\)/i);
+  if (match && parseInt(match[1]) > 255) return 191;
+  return undefined;
 }
 
 const TYPE_OPTIONS = ['INDEX', 'UNIQUE', 'FULLTEXT'];
@@ -46,12 +67,13 @@ export default function IndexDialog({ columns, initial, onSave, onClose }: Props
     setName(v);
   };
 
-  const toggleColumn = (col: string) => {
+  const toggleColumn = (colInfo: ColumnInfo) => {
     setSelectedCols(prev => {
-      if (prev.find(c => c.name === col)) {
-        return prev.filter(c => c.name !== col);
+      if (prev.find(c => c.name === colInfo.name)) {
+        return prev.filter(c => c.name !== colInfo.name);
       }
-      return [...prev, { name: col }];
+      const prefix = suggestPrefix(colInfo.type);
+      return [...prev, { name: colInfo.name, prefixLength: prefix }];
     });
   };
 
@@ -106,14 +128,19 @@ export default function IndexDialog({ columns, initial, onSave, onClose }: Props
         <div style={{ marginBottom: 14 }}>
           <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Columns</div>
           <div style={{ border: '1px solid #646464', borderRadius: 3, background: '#45494a', maxHeight: 250, overflowY: 'auto' }}>
-            {columns.map(col => {
-              const selCol = selectedCols.find(c => c.name === col);
+            {columns.map(colInfo => {
+              const selCol = selectedCols.find(c => c.name === colInfo.name);
               const isSelected = !!selCol;
-              const idx = selectedCols.findIndex(c => c.name === col);
+              const idx = selectedCols.findIndex(c => c.name === colInfo.name);
+              const requiresPrefix = needsPrefix(colInfo.type);
               return (
-                <div key={col} style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', borderBottom: '1px solid #515151', background: isSelected ? '#214283' : 'transparent', cursor: 'pointer', userSelect: 'none' }}>
-                  <input type="checkbox" checked={isSelected} readOnly style={{ marginRight: 8, cursor: 'pointer' }} onClick={() => toggleColumn(col)} />
-                  <span style={{ flex: 1, fontSize: 12 }} onClick={() => toggleColumn(col)}>{col}</span>
+                <div key={colInfo.name} style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', borderBottom: '1px solid #515151', background: isSelected ? '#214283' : 'transparent', cursor: 'pointer', userSelect: 'none' }}>
+                  <input type="checkbox" checked={isSelected} readOnly style={{ marginRight: 8, cursor: 'pointer' }} onClick={() => toggleColumn(colInfo)} />
+                  <span style={{ flex: 1, fontSize: 12 }} onClick={() => toggleColumn(colInfo)}>
+                    {colInfo.name}
+                    <span style={{ color: '#6897bb', fontSize: 10, marginLeft: 6 }}>{colInfo.type}</span>
+                    {requiresPrefix && isSelected && !selCol?.prefixLength && <span style={{ color: '#c75450', fontSize: 10, marginLeft: 4 }}>⚠ needs prefix</span>}
+                  </span>
                   {isSelected && (
                     <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                       <input
@@ -122,7 +149,7 @@ export default function IndexDialog({ columns, initial, onSave, onClose }: Props
                         min="1"
                         placeholder="prefix"
                         value={selCol?.prefixLength || ''}
-                        onChange={e => { e.stopPropagation(); setPrefixLength(col, e.target.value ? parseInt(e.target.value) : undefined); }}
+                        onChange={e => { e.stopPropagation(); setPrefixLength(colInfo.name, e.target.value ? parseInt(e.target.value) : undefined); }}
                         onClick={e => e.stopPropagation()}
                         style={{ width: 60, padding: '2px 4px', fontSize: 11, textAlign: 'center' }}
                         title="Prefix length (for long text columns)"

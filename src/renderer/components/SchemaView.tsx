@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useIpc } from '../hooks/use-ipc';
 import { setUiState, loadUiStateAsync } from '../hooks/use-ui-state';
 import { TabInfo, FullColumnInfo } from '../../shared/types';
+import { ColumnInfo } from './IndexDialog';
 import SchemaColumns from './SchemaColumns';
 import SchemaIndexes from './SchemaIndexes';
 import SchemaDDL from './SchemaDDL';
@@ -14,7 +15,7 @@ interface Props {
 export default function SchemaView({ tab, isActive }: Props) {
   const ipc = useIpc();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [columnNames, setColumnNames] = useState<string[]>([]);
+  const [columnInfos, setColumnInfos] = useState<ColumnInfo[]>([]);
 
   // Divider positions (pixels from top of container)
   const [divider1, setDivider1] = useState(300);
@@ -36,7 +37,7 @@ export default function SchemaView({ tab, isActive }: Props) {
     setRefreshTrigger(prev => prev + 1);
     // Refresh column names for index dialog
     ipc.schemaFullColumns(tab.connectionId, tab.database!, tab.table!)
-      .then((cols: FullColumnInfo[]) => setColumnNames(cols.map(c => c.field)))
+      .then((cols: FullColumnInfo[]) => setColumnInfos(cols.map(c => ({ name: c.field, type: c.type }))))
       .catch(() => {});
   };
 
@@ -46,7 +47,7 @@ export default function SchemaView({ tab, isActive }: Props) {
     if (!isActive || colNamesLoaded.current) return;
     colNamesLoaded.current = true;
     ipc.schemaFullColumns(tab.connectionId, tab.database!, tab.table!)
-      .then((cols: FullColumnInfo[]) => setColumnNames(cols.map(c => c.field)))
+      .then((cols: FullColumnInfo[]) => setColumnInfos(cols.map(c => ({ name: c.field, type: c.type }))))
       .catch(() => {});
   }, [isActive, tab.connectionId, tab.database, tab.table]);
 
@@ -93,7 +94,7 @@ export default function SchemaView({ tab, isActive }: Props) {
         <span>⋯⋯⋯</span>
       </div>
       <div style={{ height: divider2 - divider1 - 4, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <SchemaIndexes connectionId={tab.connectionId} database={tab.database!} table={tab.table!} columnNames={columnNames} isActive={isActive} refreshTrigger={refreshTrigger} onSchemaChanged={handleSchemaChanged} />
+        <SchemaIndexes connectionId={tab.connectionId} database={tab.database!} table={tab.table!} columnInfos={columnInfos} isActive={isActive} refreshTrigger={refreshTrigger} onSchemaChanged={handleSchemaChanged} />
       </div>
       <div className="sql-resizer" onMouseDown={() => { dragging.current = 2; document.body.style.cursor = 'row-resize'; }}>
         <span>⋯⋯⋯</span>
