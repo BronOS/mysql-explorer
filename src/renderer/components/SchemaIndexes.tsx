@@ -3,6 +3,7 @@ import { useIpc } from '../hooks/use-ipc';
 import { useAppContext } from '../context/app-context';
 import { IndexInfo } from '../../shared/types';
 import IndexDialog from './IndexDialog';
+import ErrorDialog from './ErrorDialog';
 
 interface Props {
   connectionId: string;
@@ -26,6 +27,7 @@ export default function SchemaIndexes({ connectionId, database, table, columnNam
   const [indexes, setIndexes] = useState<IndexInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [dialog, setDialog] = useState<DialogState | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -33,7 +35,7 @@ export default function SchemaIndexes({ connectionId, database, table, columnNam
       const data = await ipc.schemaIndexes(connectionId, database, table);
       setIndexes(data);
     } catch (e: any) {
-      setStatus(`Failed to load indexes: ${e?.message ?? e}`, 'error');
+      setErrorMsg(`Failed to load indexes:\n${e?.message ?? e}`);
     } finally {
       setLoading(false);
     }
@@ -67,7 +69,7 @@ export default function SchemaIndexes({ connectionId, database, table, columnNam
       onSchemaChanged();
       await load();
     } catch (e: any) {
-      setStatus(`Failed to add index: ${e?.message ?? e}`, 'error');
+      setErrorMsg(`Failed to add index:\n${e?.message ?? e}`);
     }
   };
 
@@ -84,7 +86,7 @@ export default function SchemaIndexes({ connectionId, database, table, columnNam
       onSchemaChanged();
       await load();
     } catch (e: any) {
-      setStatus(`Failed to edit index: ${e?.message ?? e}`, 'error');
+      setErrorMsg(`Failed to edit index:\n${e?.message ?? e}`);
     }
   };
 
@@ -100,7 +102,7 @@ export default function SchemaIndexes({ connectionId, database, table, columnNam
       onSchemaChanged();
       await load();
     } catch (e: any) {
-      setStatus(`Failed to drop index: ${e?.message ?? e}`, 'error');
+      setErrorMsg(`Failed to drop index:\n${e?.message ?? e}`);
     }
   };
 
@@ -185,6 +187,7 @@ export default function SchemaIndexes({ connectionId, database, table, columnNam
           onClose={() => setDialog(null)}
         />
       )}
+      {errorMsg && <ErrorDialog message={errorMsg} onClose={() => setErrorMsg(null)} />}
     </div>
   );
 }

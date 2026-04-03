@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useIpc } from '../hooks/use-ipc';
 import { useAppContext } from '../context/app-context';
 import { FullColumnInfo } from '../../shared/types';
+import ErrorDialog from './ErrorDialog';
 
 interface Props {
   connectionId: string;
@@ -126,6 +127,7 @@ export default function SchemaColumns({ connectionId, database, table, isActive,
   const [drafts, setDrafts] = useState<DraftColumn[]>([]);
   const [changes, setChanges] = useState<Map<ChangeKey, Partial<FullColumnInfo>>>(new Map());
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
@@ -138,7 +140,7 @@ export default function SchemaColumns({ connectionId, database, table, isActive,
       setDrafts([]);
       setChanges(new Map());
     } catch (e: any) {
-      setStatus(`Failed to load columns: ${e?.message ?? e}`, 'error');
+      setErrorMsg(`Failed to load columns:\n${e?.message ?? e}`);
     } finally {
       setLoading(false);
     }
@@ -220,7 +222,7 @@ export default function SchemaColumns({ connectionId, database, table, isActive,
       onSchemaChanged();
       await load();
     } catch (e: any) {
-      setStatus(`Commit failed: ${e?.message ?? e}`, 'error');
+      setErrorMsg(`Commit failed:\n${e?.message ?? e}`);
     }
   };
 
@@ -259,7 +261,7 @@ export default function SchemaColumns({ connectionId, database, table, isActive,
       onSchemaChanged();
       await load();
     } catch (e: any) {
-      setStatus(`Drop failed: ${e?.message ?? e}`, 'error');
+      setErrorMsg(`Drop failed:\n${e?.message ?? e}`);
     }
   };
 
@@ -460,6 +462,7 @@ export default function SchemaColumns({ connectionId, database, table, isActive,
           </table>
         )}
       </div>
+      {errorMsg && <ErrorDialog message={errorMsg} onClose={() => setErrorMsg(null)} />}
     </div>
   );
 }
