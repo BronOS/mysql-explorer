@@ -141,8 +141,15 @@ export default function ResultTable({ columns, rows }: Props) {
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+      e.preventDefault();
+      setSelectedRows(new Set(rows.map((_, i) => i)));
+    }
+  };
+
   return (
-    <div className="result-table-container">
+    <div className="result-table-container" tabIndex={0} onKeyDown={handleKeyDown}>
       {copyFeedback && <div className="copy-feedback">{copyFeedback}</div>}
       <div className="datagrid-wrapper" onClick={() => setContextMenu(null)}>
         <table className="datagrid">

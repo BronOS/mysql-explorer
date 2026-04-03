@@ -273,8 +273,15 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
     </colgroup>
   ) : null;
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+      e.preventDefault();
+      setSelectedRows(new Set(allRows.map((_, i) => i)));
+    }
+  };
+
   return (
-    <>
+    <div tabIndex={0} onKeyDown={handleKeyDown} style={{ display: 'contents' }}>
       <div className="datagrid-header" ref={headerRef}>
         <table className="datagrid" style={tableStyle}>
           {colGroup}
@@ -442,6 +449,6 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
         </div>
       )}
       {copyFeedback && <div className="copy-feedback">{copyFeedback}</div>}
-    </>
+    </div>
   );
 }
