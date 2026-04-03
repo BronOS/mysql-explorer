@@ -3,6 +3,7 @@ import ConnectionDialog from './ConnectionDialog';
 import { useAppContext } from '../context/app-context';
 import { useIpc } from '../hooks/use-ipc';
 import { ConnectionConfig } from '../../shared/types';
+import { setUiState, loadUiStateAsync } from '../hooks/use-ui-state';
 
 export default function Sidebar({ width }: { width: number }) {
   const [showDialog, setShowDialog] = useState(false);
@@ -24,9 +25,8 @@ export default function Sidebar({ width }: { width: number }) {
   // Persist expanded connections (skip initial render)
   useEffect(() => {
     if (initialized.current) {
-      ipc.uiLoadState().then((s: any) => {
-        ipc.uiSaveState({ ...s, expandedConns: [...expandedConns], expandedDbs: [...expandedDbs] });
-      }).catch(() => {});
+      setUiState('expandedConns', [...expandedConns]);
+      setUiState('expandedDbs', [...expandedDbs]);
     }
   }, [expandedConns, expandedDbs]);
 
@@ -52,7 +52,7 @@ export default function Sidebar({ width }: { width: number }) {
       const conns = await ipc.connectionList();
       dispatch({ type: 'SET_CONNECTIONS', connections: conns });
 
-      const uiState = await ipc.uiLoadState().catch(() => ({}));
+      const uiState = await loadUiStateAsync();
       const savedConns: string[] = uiState.expandedConns || [];
       const savedDbs: string[] = uiState.expandedDbs || [];
 

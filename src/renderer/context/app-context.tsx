@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useCallback, useEffect, useRef } from 'react';
 import { TabInfo, ConnectionConfig, SchemaTree } from '../../shared/types';
+import { setUiState, loadUiStateAsync } from '../hooks/use-ui-state';
 
 function randomId(): string {
   return Math.random().toString(36).slice(2, 10);
@@ -8,8 +9,8 @@ function randomId(): string {
 const MAX_TABS = 10;
 
 function persistTabs(tabs: TabInfo[], activeTabId: string | null): void {
-  // Persist via IPC to disk (not localStorage which gets wiped by Vite port changes)
-  try { window.electronAPI?.uiSaveState({ tabs, activeTabId }); } catch {}
+  setUiState('tabs', tabs);
+  setUiState('activeTabId', activeTabId);
 }
 
 interface StatusMessage {
@@ -147,7 +148,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // Load persisted tabs from disk on mount
   useEffect(() => {
-    window.electronAPI?.uiLoadState().then((saved: any) => {
+    loadUiStateAsync().then((saved) => {
       if (saved?.tabs?.length > 0) {
         for (const tab of saved.tabs) {
           dispatch({ type: 'OPEN_TAB', tab });
