@@ -1,9 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import ConnectionDialog from './ConnectionDialog';
 import { useAppContext } from '../context/app-context';
 import { useIpc } from '../hooks/use-ipc';
 import { ConnectionConfig } from '../../shared/types';
 import { setUiState, loadUiStateAsync } from '../hooks/use-ui-state';
+
+function menuPosition(x: number, y: number, menuHeight: number = 120): { left: number; top: number } {
+  const left = x + 180 > window.innerWidth ? window.innerWidth - 184 : x;
+  const top = y + menuHeight > window.innerHeight ? y - menuHeight : y;
+  return { left, top };
+}
 
 export default function Sidebar({ width }: { width: number }) {
   const [showDialog, setShowDialog] = useState(false);
@@ -341,7 +347,7 @@ export default function Sidebar({ width }: { width: number }) {
       )}
 
       {contextMenu && (
-        <div className="context-menu" style={{ left: contextMenu.x, top: contextMenu.y }}>
+        <div className="context-menu" style={menuPosition(contextMenu.x, contextMenu.y, 130)}>
           <div className="context-menu-item" onClick={() => handleContextAction('console')}>Open SQL Console</div>
           <div className="context-menu-item" onClick={() => handleContextAction('edit')}>Edit</div>
           <div className="context-menu-item" onClick={() => handleContextAction('disconnect')}>Disconnect</div>
@@ -350,7 +356,7 @@ export default function Sidebar({ width }: { width: number }) {
       )}
 
       {tableContextMenu && (
-        <div className="context-menu" style={{ left: tableContextMenu.x, top: tableContextMenu.y }}>
+        <div className="context-menu" style={menuPosition(tableContextMenu.x, tableContextMenu.y, 70)}>
           <div className="context-menu-item" onClick={() => {
             openTab({ connectionId: tableContextMenu.conn.id, connectionName: tableContextMenu.conn.name, connectionColor: tableContextMenu.conn.color, type: 'table', database: tableContextMenu.database, table: tableContextMenu.table });
             setTableContextMenu(null);
