@@ -139,7 +139,7 @@ export default function IndexDialog({ columns, initial, onSave, onClose }: Props
                   <span style={{ flex: 1, fontSize: 12 }} onClick={() => toggleColumn(colInfo)}>
                     {colInfo.name}
                     <span style={{ color: '#6897bb', fontSize: 10, marginLeft: 6 }}>{colInfo.type}</span>
-                    {requiresPrefix && isSelected && !selCol?.prefixLength && <span style={{ color: '#c75450', fontSize: 10, marginLeft: 4 }}>⚠ needs prefix</span>}
+                    {requiresPrefix && isSelected && !selCol?.prefixLength && <span style={{ color: '#cc7832', fontSize: 10, marginLeft: 4 }}>⚠ set max indexed length</span>}
                   </span>
                   {isSelected && (
                     <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
@@ -147,12 +147,12 @@ export default function IndexDialog({ columns, initial, onSave, onClose }: Props
                         className="input"
                         type="number"
                         min="1"
-                        placeholder="prefix"
+                        placeholder="length"
                         value={selCol?.prefixLength || ''}
                         onChange={e => { e.stopPropagation(); setPrefixLength(colInfo.name, e.target.value ? parseInt(e.target.value) : undefined); }}
                         onClick={e => e.stopPropagation()}
                         style={{ width: 60, padding: '2px 4px', fontSize: 11, textAlign: 'center' }}
-                        title="Prefix length (for long text columns)"
+                        title="Max indexed characters (required for TEXT/BLOB, optional for VARCHAR)"
                       />
                       <button className="btn btn-secondary" style={{ padding: '1px 6px', fontSize: 10 }} onClick={e => { e.stopPropagation(); moveUp(idx); }} disabled={idx === 0}>▲</button>
                       <button className="btn btn-secondary" style={{ padding: '1px 6px', fontSize: 10 }} onClick={e => { e.stopPropagation(); moveDown(idx); }} disabled={idx === selectedCols.length - 1}>▼</button>
