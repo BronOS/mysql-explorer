@@ -56,7 +56,7 @@ export default function CellEditor({ value, column, editable, onSave, onOpenText
     return (
       <span
         className={`cell-editable ${isNull ? 'cell-null' : ''}`}
-        onClick={() => setEditing(true)}
+        onDoubleClick={() => setEditing(true)}
       >
         {displayValue}
       </span>
@@ -67,7 +67,7 @@ export default function CellEditor({ value, column, editable, onSave, onOpenText
     return (
       <span
         className="cell-text-trigger"
-        onClick={() => onOpenTextModal(isNull ? '' : String(value), (v) => onSave(v || null))}
+        onDoubleClick={() => onOpenTextModal(isNull ? '' : String(value), (v) => onSave(v || null))}
       >
         {isNull ? <span className="cell-null">NULL</span> : `${displayValue.slice(0, 50)}${displayValue.length > 50 ? '...' : ''}`}
         <span className="cell-text-icon">📝</span>
@@ -99,7 +99,7 @@ export default function CellEditor({ value, column, editable, onSave, onOpenText
   return (
     <span
       className={`cell-editable ${isNull ? 'cell-null' : ''}`}
-      onClick={() => { setEditValue(isNull ? '' : String(value)); setEditing(true); }}
+      onDoubleClick={() => { setEditValue(isNull ? '' : String(value)); setEditing(true); }}
     >
       {displayValue}
     </span>
