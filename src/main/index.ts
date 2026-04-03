@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, globalShortcut, Menu } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
 import started from 'electron-squirrel-startup';
@@ -55,6 +55,16 @@ const createWindow = () => {
   if (state.maximized) mainWindow.maximize();
 
   mainWindow.on('close', () => saveWindowState(mainWindow));
+
+  // Disable Cmd+R / Ctrl+R / F5 reload
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.key === 'r' && (input.meta || input.control) && !input.shift) {
+      event.preventDefault();
+    }
+    if (input.key === 'F5') {
+      event.preventDefault();
+    }
+  });
 
   // and load the index.html of the app.
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
