@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useIpc } from '../hooks/use-ipc';
+import { setUiState, loadUiStateAsync } from '../hooks/use-ui-state';
 import { TabInfo, FullColumnInfo } from '../../shared/types';
 import SchemaColumns from './SchemaColumns';
 import SchemaIndexes from './SchemaIndexes';
@@ -19,6 +20,16 @@ export default function SchemaView({ tab, isActive }: Props) {
   const [divider1, setDivider1] = useState(300);
   const [divider2, setDivider2] = useState(500);
   const dragging = useRef<1 | 2 | null>(null);
+  const dividersLoaded = useRef(false);
+
+  // Load divider positions from disk
+  useEffect(() => {
+    loadUiStateAsync().then(s => {
+      if (s.schemaDivider1) setDivider1(s.schemaDivider1);
+      if (s.schemaDivider2) setDivider2(s.schemaDivider2);
+      dividersLoaded.current = true;
+    });
+  }, []);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleSchemaChanged = () => {
@@ -57,7 +68,14 @@ export default function SchemaView({ tab, isActive }: Props) {
         setDivider2(Math.max(divider1 + 50, Math.min(y, rect.height - 80)));
       }
     };
-    const handleMouseUp = () => { dragging.current = null; document.body.style.cursor = ''; };
+    const handleMouseUp = () => {
+      if (dragging.current && dividersLoaded.current) {
+        setUiState('schemaDivider1', divider1);
+        setUiState('schemaDivider2', divider2);
+      }
+      dragging.current = null;
+      document.body.style.cursor = '';
+    };
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
     return () => {
