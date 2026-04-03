@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useRef } from 'react';
 import { useReactTable, getCoreRowModel, flexRender, ColumnDef } from '@tanstack/react-table';
 
 interface Props {
@@ -140,6 +140,7 @@ export default function ResultTable({ columns, rows }: Props) {
   }, [selectedRows, columns, rows]);
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const containerRefResult = useRef<HTMLDivElement>(null);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
@@ -149,7 +150,7 @@ export default function ResultTable({ columns, rows }: Props) {
   };
 
   return (
-    <div className="result-table-container" tabIndex={0} onKeyDown={handleKeyDown}>
+    <div className="result-table-container" ref={containerRefResult} tabIndex={-1} onKeyDown={handleKeyDown} onClick={() => containerRefResult.current?.focus()}>
       {copyFeedback && <div className="copy-feedback">{copyFeedback}</div>}
       <div className="datagrid-wrapper" onClick={() => setContextMenu(null)}>
         <table className="datagrid">

@@ -113,6 +113,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .cell-modified { background: #2d3b2d !important; }
 
 /* DataGrid */
+.datagrid-container { display: flex; flex-direction: column; flex: 1; min-height: 0; outline: none; }
 .datagrid-wrapper { flex: 1; overflow: auto; scrollbar-width: thin; scrollbar-color: transparent transparent; }
 .datagrid-wrapper:hover { scrollbar-color: #555 transparent; }
 .datagrid-wrapper::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -145,7 +146,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .row-selected { background: #214283 !important; }
 .row-selected:nth-child(even) { background: #214283 !important; }
 .result-table-container .datagrid tbody tr { user-select: none; cursor: default; }
-.result-table-container { display: flex; flex-direction: column; flex: 1; overflow: hidden; position: relative; }
+.result-table-container { display: flex; flex-direction: column; flex: 1; overflow: hidden; position: relative; outline: none; }
 .copy-feedback { position: fixed; bottom: 30px; right: 12px; background: #4b6eaf; color: #fff; padding: 6px 14px; border-radius: 3px; font-size: 11px; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
 
 /* Table view */

@@ -160,6 +160,7 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
     getCoreRowModel: getCoreRowModel(),
   });
 
+  const containerRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const [colWidths, setColWidths] = useState<number[]>([]);
@@ -281,7 +282,7 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
   };
 
   return (
-    <div tabIndex={0} onKeyDown={handleKeyDown} style={{ display: 'contents' }}>
+    <div className="datagrid-container" ref={containerRef} tabIndex={-1} onKeyDown={handleKeyDown} onClick={() => containerRef.current?.focus()}>
       <div className="datagrid-header" ref={headerRef}>
         <table className="datagrid" style={tableStyle}>
           {colGroup}
