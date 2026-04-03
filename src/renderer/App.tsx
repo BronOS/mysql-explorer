@@ -53,9 +53,10 @@ export default function App() {
     localStorage.setItem('sidebarWidth', String(sidebarWidth));
   }, [sidebarWidth]);
 
-  // Ctrl+Tab / Ctrl+Shift+Tab to switch tabs
+  // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+Tab / Ctrl+Shift+Tab to switch tabs
       if (e.ctrlKey && e.key === 'Tab' && tabs.length > 1) {
         e.preventDefault();
         const currentIdx = tabs.findIndex(t => t.id === activeTabId);
@@ -64,9 +65,17 @@ export default function App() {
           : (currentIdx + 1) % tabs.length;
         setActiveTab(tabs[nextIdx].id);
       }
+      // Block browser Cmd+A except in inputs, textareas, and CodeMirror
+      if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+        const tag = (e.target as HTMLElement).tagName;
+        const isCM = (e.target as HTMLElement).closest('.cm-editor');
+        if (tag !== 'INPUT' && tag !== 'TEXTAREA' && !isCM) {
+          e.preventDefault();
+        }
+      }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, true); // capture phase
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [tabs, activeTabId, setActiveTab]);
 
   return (
