@@ -24,15 +24,11 @@ export default function Sidebar({ width }: { width: number }) {
   // Persist expanded connections (skip initial render)
   useEffect(() => {
     if (initialized.current) {
-      localStorage.setItem('expandedConns', JSON.stringify([...expandedConns]));
+      ipc.uiLoadState().then((s: any) => {
+        ipc.uiSaveState({ ...s, expandedConns: [...expandedConns], expandedDbs: [...expandedDbs] });
+      }).catch(() => {});
     }
-  }, [expandedConns]);
-
-  useEffect(() => {
-    if (initialized.current) {
-      localStorage.setItem('expandedDbs', JSON.stringify([...expandedDbs]));
-    }
-  }, [expandedDbs]);
+  }, [expandedConns, expandedDbs]);
 
   // Scroll to active node when tab changes
   useEffect(() => {
@@ -56,8 +52,9 @@ export default function Sidebar({ width }: { width: number }) {
       const conns = await ipc.connectionList();
       dispatch({ type: 'SET_CONNECTIONS', connections: conns });
 
-      const savedConns: string[] = JSON.parse(localStorage.getItem('expandedConns') || '[]');
-      const savedDbs: string[] = JSON.parse(localStorage.getItem('expandedDbs') || '[]');
+      const uiState = await ipc.uiLoadState().catch(() => ({}));
+      const savedConns: string[] = uiState.expandedConns || [];
+      const savedDbs: string[] = uiState.expandedDbs || [];
 
       // Step 1: Load cached schema instantly (no network)
       let cache: Record<string, any> = {};

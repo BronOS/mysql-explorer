@@ -125,4 +125,8 @@ export function registerIpcHandlers(
 
   // Import
   ipcMain.handle('import:datagrip', () => importDataGripConnections());
+
+  // UI State
+  ipcMain.handle('ui:load-state', () => fileManager.loadUiState());
+  ipcMain.handle('ui:save-state', (_, state) => fileManager.saveUiState(state));
 }

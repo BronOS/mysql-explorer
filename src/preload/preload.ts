@@ -44,6 +44,10 @@ const electronAPI = {
   // Import
   importDataGrip: () => ipcRenderer.invoke('import:datagrip'),
 
+  // UI State (persisted to disk, not localStorage)
+  uiLoadState: () => ipcRenderer.invoke('ui:load-state'),
+  uiSaveState: (state: any) => ipcRenderer.invoke('ui:save-state', state),
+
   // Events
   onRefresh: (callback: () => void) => {
     ipcRenderer.on('app:refresh', callback);

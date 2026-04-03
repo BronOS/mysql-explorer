@@ -7,16 +7,9 @@ function randomId(): string {
 
 const MAX_TABS = 10;
 
-function loadPersistedTabs(): { tabs: TabInfo[]; activeTabId: string | null } {
-  try {
-    const data = typeof localStorage !== 'undefined' ? localStorage.getItem('tabState') : null;
-    if (data) return JSON.parse(data);
-  } catch {}
-  return { tabs: [], activeTabId: null };
-}
-
 function persistTabs(tabs: TabInfo[], activeTabId: string | null): void {
-  try { localStorage.setItem('tabState', JSON.stringify({ tabs, activeTabId })); } catch {}
+  // Persist via IPC to disk (not localStorage which gets wiped by Vite port changes)
+  try { window.electronAPI?.uiSaveState({ tabs, activeTabId }); } catch {}
 }
 
 interface StatusMessage {
@@ -144,16 +137,27 @@ interface AppContextValue extends AppState {
 const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const persisted = loadPersistedTabs();
   const [state, dispatch] = useReducer(reducer, {
     connections: [],
-    tabs: persisted.tabs,
-    activeTabId: persisted.activeTabId,
+    tabs: [],
+    activeTabId: null,
     schema: {},
     status: null,
   });
 
-  // Tab persistence is handled directly in the reducer actions (OPEN_TAB, CLOSE_TAB, etc.)
+  // Load persisted tabs from disk on mount
+  useEffect(() => {
+    window.electronAPI?.uiLoadState().then((saved: any) => {
+      if (saved?.tabs?.length > 0) {
+        for (const tab of saved.tabs) {
+          dispatch({ type: 'OPEN_TAB', tab });
+        }
+        if (saved.activeTabId) {
+          dispatch({ type: 'SET_ACTIVE_TAB', tabId: saved.activeTabId });
+        }
+      }
+    }).catch(() => {});
+  }, []);
 
   const openTab = useCallback((opts: Omit<TabInfo, 'id' | 'lastAccessed'>) => {
     const existing = state.tabs.find(t =>

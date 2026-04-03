@@ -56,4 +56,21 @@ export class FileManager {
   saveSchemaCache(cache: Record<string, any>): void {
     fs.writeFileSync(this.schemaCachePath, JSON.stringify(cache));
   }
+
+  private get uiStatePath(): string {
+    return path.join(this.basePath, 'ui-state.json');
+  }
+
+  loadUiState(): Record<string, any> {
+    if (!fs.existsSync(this.uiStatePath)) return {};
+    try {
+      return JSON.parse(fs.readFileSync(this.uiStatePath, 'utf-8'));
+    } catch {
+      return {};
+    }
+  }
+
+  saveUiState(state: Record<string, any>): void {
+    fs.writeFileSync(this.uiStatePath, JSON.stringify(state));
+  }
 }
