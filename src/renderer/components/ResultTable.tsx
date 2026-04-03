@@ -159,6 +159,55 @@ export default function ResultTable({ columns, rows }: Props) {
     if (widths.length > 0) setColWidths(widths);
   }, [rows]);
 
+  // Column resize
+  const resizing = useRef<{ index: number; startX: number; startWidth: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!resizing.current) return;
+      const diff = e.clientX - resizing.current.startX;
+      const newWidth = Math.max(50, resizing.current.startWidth + diff);
+      setColWidths(prev => {
+        const next = [...prev];
+        next[resizing.current!.index] = newWidth;
+        return next;
+      });
+    };
+    const handleMouseUp = () => {
+      if (resizing.current) { resizing.current = null; document.body.style.cursor = ''; }
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
+  const startResize = (index: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    resizing.current = { index, startX: e.clientX, startWidth: colWidths[index] || 100 };
+    document.body.style.cursor = 'col-resize';
+  };
+
+  const autoFitColumn = (index: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!bodyRef.current || !headerRef.current) return;
+    const measure = document.createElement('span');
+    measure.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;font-size:12px;font-family:inherit;padding:0;';
+    document.body.appendChild(measure);
+    let maxWidth = 0;
+    const headerCell = headerRef.current.querySelector(`tr th:nth-child(${index + 1})`);
+    if (headerCell) { measure.textContent = headerCell.textContent || ''; maxWidth = Math.max(maxWidth, measure.offsetWidth); }
+    const bodyCells = bodyRef.current.querySelectorAll(`tbody tr td:nth-child(${index + 1})`);
+    bodyCells.forEach(td => { measure.textContent = (td as HTMLElement).textContent || ''; maxWidth = Math.max(maxWidth, measure.offsetWidth); });
+    document.body.removeChild(measure);
+    maxWidth = Math.max(50, maxWidth + 28);
+    setColWidths(prev => { const next = [...prev]; next[index] = maxWidth; return next; });
+  };
+
   const hasWidths = colWidths.length > 0;
   const totalWidth = hasWidths ? colWidths.reduce((a, b) => a + b, 0) : undefined;
   const tableStyle = totalWidth ? { width: totalWidth, tableLayout: 'fixed' as const } : undefined;
@@ -182,8 +231,11 @@ export default function ResultTable({ columns, rows }: Props) {
           <thead>
             {table.getHeaderGroups().map(hg => (
               <tr key={hg.id}>
-                {hg.headers.map(h => (
-                  <th key={h.id}>{flexRender(h.column.columnDef.header, h.getContext())}</th>
+                {hg.headers.map((h, colIdx) => (
+                  <th key={h.id}>
+                    {flexRender(h.column.columnDef.header, h.getContext())}
+                    <span className="col-resize-handle" onMouseDown={(e) => startResize(colIdx, e)} onDoubleClick={(e) => autoFitColumn(colIdx, e)} onClick={(e) => e.stopPropagation()} />
+                  </th>
                 ))}
               </tr>
             ))}
