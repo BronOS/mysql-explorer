@@ -4,6 +4,7 @@ import { useAppContext } from '../context/app-context';
 import { FullColumnInfo } from '../../shared/types';
 import ErrorDialog from './ErrorDialog';
 import EnumValuesDialog from './EnumValuesDialog';
+import PrecisionDialog from './PrecisionDialog';
 
 interface Props {
   connectionId: string;
@@ -137,6 +138,7 @@ export default function SchemaColumns({ connectionId, database, table, isActive,
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [enumDialog, setEnumDialog] = useState<{ field: string; isDraft: boolean; draftId?: string; values: string[] } | null>(null);
+  const [precisionDialog, setPrecisionDialog] = useState<{ field: string; isDraft: boolean; draftId?: string; value: string } | null>(null);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
@@ -388,7 +390,13 @@ export default function SchemaColumns({ connectionId, database, table, isActive,
             );
           }
           if (baseType === 'DECIMAL' || baseType === 'FLOAT' || baseType === 'DOUBLE') {
-            return renderText(col.length, handleChange('length') as (v: string) => void, isModifiedField('length'), 'e.g. 10,2');
+            return (
+              <td className={isModifiedField('length') ? 'cell-modified' : ''}>
+                <span className="cell-editable" onClick={() => setPrecisionDialog({ field: col.field, isDraft, draftId, value: col.length })}>
+                  {col.length || <span className="cell-null">click to set</span>}
+                </span>
+              </td>
+            );
           }
           return renderText(col.length, handleChange('length') as (v: string) => void, isModifiedField('length'), 'e.g. 255');
         })()}
@@ -492,6 +500,19 @@ export default function SchemaColumns({ connectionId, database, table, isActive,
         )}
       </div>
       {errorMsg && <ErrorDialog message={errorMsg} onClose={() => setErrorMsg(null)} />}
+      {precisionDialog && (
+        <PrecisionDialog
+          initial={precisionDialog.value}
+          onSave={(val) => {
+            if (precisionDialog.isDraft && precisionDialog.draftId) {
+              applyDraftChange(precisionDialog.draftId, 'length', val);
+            } else {
+              applyChange(precisionDialog.field, 'length', val);
+            }
+          }}
+          onClose={() => setPrecisionDialog(null)}
+        />
+      )}
       {enumDialog && (
         <EnumValuesDialog
           initial={enumDialog.values}
