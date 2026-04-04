@@ -19,6 +19,9 @@ const electronAPI = {
   schemaIndexes: (connectionId: string, database: string, table: string) => ipcRenderer.invoke('schema:indexes', connectionId, database, table),
   schemaCreateTable: (connectionId: string, database: string, table: string) => ipcRenderer.invoke('schema:create-table', connectionId, database, table),
   schemaAlterTable: (connectionId: string, sql: string) => ipcRenderer.invoke('schema:alter-table', connectionId, sql),
+  schemaDropTable: (connectionId: string, database: string, table: string) => ipcRenderer.invoke('schema:drop-table', connectionId, database, table),
+  schemaDropDatabase: (connectionId: string, name: string) => ipcRenderer.invoke('schema:drop-database', connectionId, name),
+  schemaCreateDatabase: (connectionId: string, name: string, charset: string, collation: string) => ipcRenderer.invoke('schema:create-database', connectionId, name, charset, collation),
 
   // Query
   queryUseDatabase: (connectionId: string, database: string) => ipcRenderer.invoke('query:use-database', connectionId, database),

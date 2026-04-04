@@ -87,4 +87,18 @@ export class SchemaBrowser {
   async alterTable(pool: Pool, sql: string): Promise<void> {
     await pool.query(sql);
   }
+
+  async dropTable(pool: Pool, database: string, table: string): Promise<void> {
+    await pool.query(`DROP TABLE \`${database}\`.\`${table}\``);
+  }
+
+  async dropDatabase(pool: Pool, name: string): Promise<void> {
+    await pool.query(`DROP DATABASE \`${name}\``);
+  }
+
+  async createDatabase(pool: Pool, name: string, charset: string, collation: string): Promise<void> {
+    let sql = `CREATE DATABASE \`${name}\` DEFAULT CHARACTER SET ${charset}`;
+    if (collation) sql += ` COLLATE ${collation}`;
+    await pool.query(sql);
+  }
 }

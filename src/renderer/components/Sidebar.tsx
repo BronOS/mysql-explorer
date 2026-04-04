@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import ConnectionDialog from './ConnectionDialog';
 import CreateTableDialog from './CreateTableDialog';
+import CreateDatabaseDialog from './CreateDatabaseDialog';
 import { useAppContext } from '../context/app-context';
 import { useIpc } from '../hooks/use-ipc';
 import { ConnectionConfig } from '../../shared/types';
@@ -19,6 +20,7 @@ export default function Sidebar({ width }: { width: number }) {
   const [tableContextMenu, setTableContextMenu] = useState<{ x: number; y: number; conn: ConnectionConfig; database: string; table: string } | null>(null);
   const [dbContextMenu, setDbContextMenu] = useState<{ x: number; y: number; conn: ConnectionConfig; database: string } | null>(null);
   const [showCreateTable, setShowCreateTable] = useState<{ connectionId: string; database: string; conn: ConnectionConfig } | null>(null);
+  const [showCreateDatabase, setShowCreateDatabase] = useState<{ connectionId: string } | null>(null);
   const [expandedConns, setExpandedConns] = useState<Set<string>>(new Set());
   const [expandedDbs, setExpandedDbs] = useState<Set<string>>(new Set());
   const [connecting, setConnecting] = useState<Set<string>>(new Set());
@@ -26,7 +28,7 @@ export default function Sidebar({ width }: { width: number }) {
   const [tableFilter, setTableFilter] = useState('');
   const initialized = useRef(false);
 
-  const { connections, schema, dispatch, openTab, tabs, activeTabId } = useAppContext();
+  const { connections, schema, dispatch, openTab, closeTab, setStatus, tabs, activeTabId } = useAppContext();
   const ipc = useIpc();
   const activeNodeRef = useRef<HTMLDivElement>(null);
   const activeTab = tabs.find(t => t.id === activeTabId);
@@ -262,6 +264,9 @@ export default function Sidebar({ width }: { width: number }) {
           type: 'console',
         });
         break;
+      case 'new-database':
+        setShowCreateDatabase({ connectionId: conn.id });
+        break;
     }
     setContextMenu(null);
   };
@@ -350,8 +355,11 @@ export default function Sidebar({ width }: { width: number }) {
       )}
 
       {contextMenu && (
-        <div className="context-menu" style={menuPosition(contextMenu.x, contextMenu.y, 130)}>
+        <div className="context-menu" style={menuPosition(contextMenu.x, contextMenu.y, expandedConns.has(contextMenu.connectionId) ? 165 : 130)}>
           <div className="context-menu-item" onClick={() => handleContextAction('console')}>Open SQL Console</div>
+          {expandedConns.has(contextMenu.connectionId) && (
+            <div className="context-menu-item" onClick={() => handleContextAction('new-database')}>New Database</div>
+          )}
           <div className="context-menu-item" onClick={() => handleContextAction('edit')}>Edit</div>
           <div className="context-menu-item" onClick={() => handleContextAction('disconnect')}>Disconnect</div>
           <div className="context-menu-item" onClick={() => handleContextAction('delete')} style={{ color: '#ef4444' }}>Delete</div>
@@ -359,7 +367,7 @@ export default function Sidebar({ width }: { width: number }) {
       )}
 
       {tableContextMenu && (
-        <div className="context-menu" style={menuPosition(tableContextMenu.x, tableContextMenu.y, 70)}>
+        <div className="context-menu" style={menuPosition(tableContextMenu.x, tableContextMenu.y, 105)}>
           <div className="context-menu-item" onClick={() => {
             openTab({ connectionId: tableContextMenu.conn.id, connectionName: tableContextMenu.conn.name, connectionColor: tableContextMenu.conn.color, type: 'table', database: tableContextMenu.database, table: tableContextMenu.table });
             setTableContextMenu(null);
@@ -368,15 +376,56 @@ export default function Sidebar({ width }: { width: number }) {
             openTab({ connectionId: tableContextMenu.conn.id, connectionName: tableContextMenu.conn.name, connectionColor: tableContextMenu.conn.color, type: 'schema', database: tableContextMenu.database, table: tableContextMenu.table });
             setTableContextMenu(null);
           }}>View Schema</div>
+          <div className="context-menu-item" style={{ color: '#ef4444' }} onClick={async () => {
+            const { conn, database, table } = tableContextMenu;
+            setTableContextMenu(null);
+            if (!confirm(`Drop table \`${table}\`? This cannot be undone.`)) return;
+            try {
+              await ipc.schemaDropTable(conn.id, database, table);
+              // Close any open tabs for this table
+              tabs.filter(t => t.connectionId === conn.id && t.database === database && t.table === table)
+                .forEach(t => closeTab(t.id));
+              // Refresh tables in sidebar
+              const tables = await ipc.schemaTables(conn.id, database);
+              dispatch({ type: 'SET_TABLES', connectionId: conn.id, database, tables });
+              setStatus(`Dropped table ${table}`, 'success');
+            } catch (e: any) {
+              setStatus(`Drop table failed: ${e?.message ?? e}`, 'error');
+            }
+          }}>Delete Table</div>
         </div>
       )}
 
       {dbContextMenu && (
-        <div className="context-menu" style={menuPosition(dbContextMenu.x, dbContextMenu.y, 35)}>
+        <div className="context-menu" style={menuPosition(dbContextMenu.x, dbContextMenu.y, 70)}>
           <div className="context-menu-item" onClick={() => {
             setShowCreateTable({ connectionId: dbContextMenu.conn.id, database: dbContextMenu.database, conn: dbContextMenu.conn });
             setDbContextMenu(null);
           }}>New Table</div>
+          <div className="context-menu-item" style={{ color: '#ef4444' }} onClick={async () => {
+            const { conn, database } = dbContextMenu;
+            setDbContextMenu(null);
+            if (!confirm(`Drop database \`${database}\`? All tables will be permanently deleted. This cannot be undone.`)) return;
+            try {
+              await ipc.schemaDropDatabase(conn.id, database);
+              // Close any open tabs for this database
+              tabs.filter(t => t.connectionId === conn.id && t.database === database)
+                .forEach(t => closeTab(t.id));
+              // Collapse the database in sidebar
+              setExpandedDbs(prev => { const s = new Set(prev); s.delete(`${conn.id}:${database}`); return s; });
+              // Refresh databases
+              const dbs = await ipc.schemaDatabases(conn.id);
+              dispatch({
+                type: 'SET_SCHEMA',
+                connectionId: conn.id,
+                databases: dbs.map((name: string) => ({ name, tables: [], columns: {}, loaded: false })),
+                loaded: true,
+              });
+              setStatus(`Dropped database ${database}`, 'success');
+            } catch (e: any) {
+              setStatus(`Drop database failed: ${e?.message ?? e}`, 'error');
+            }
+          }}>Delete Database</div>
         </div>
       )}
 
@@ -399,6 +448,23 @@ export default function Sidebar({ width }: { width: number }) {
             });
           }}
           onClose={() => setShowCreateTable(null)}
+        />
+      )}
+
+      {showCreateDatabase && (
+        <CreateDatabaseDialog
+          connectionId={showCreateDatabase.connectionId}
+          onCreated={async () => {
+            // Refresh databases in sidebar
+            const dbs = await ipc.schemaDatabases(showCreateDatabase.connectionId);
+            dispatch({
+              type: 'SET_SCHEMA',
+              connectionId: showCreateDatabase.connectionId,
+              databases: dbs.map((name: string) => ({ name, tables: [], columns: {}, loaded: false })),
+              loaded: true,
+            });
+          }}
+          onClose={() => setShowCreateDatabase(null)}
         />
       )}
     </div>

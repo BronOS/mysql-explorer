@@ -79,6 +79,21 @@ export function registerIpcHandlers(
     return schemaBrowser.alterTable(pool, sql);
   });
 
+  ipcMain.handle('schema:drop-table', async (_, connectionId, database, table) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    return schemaBrowser.dropTable(pool, database, table);
+  });
+
+  ipcMain.handle('schema:drop-database', async (_, connectionId, name) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    return schemaBrowser.dropDatabase(pool, name);
+  });
+
+  ipcMain.handle('schema:create-database', async (_, connectionId, name, charset, collation) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    return schemaBrowser.createDatabase(pool, name, charset, collation);
+  });
+
   // Query
   ipcMain.handle('query:use-database', async (_, connectionId, database) => {
     const pool = await connectionManager.ensureConnected(connectionId);
