@@ -243,15 +243,17 @@ export default function SchemaColumns({ connectionId, database, table, isActive,
 
     if (stmts.length === 0) return;
 
+    let lastSql = '';
     try {
       for (const sql of stmts) {
+        lastSql = sql;
         await ipc.schemaAlterTable(connectionId, sql);
       }
       setStatus(`Committed ${stmts.length} change(s) to ${table}`, 'success');
       onSchemaChanged();
       await load();
     } catch (e: any) {
-      setErrorMsg(`Commit failed:\n${e?.message ?? e}`);
+      setErrorMsg(`Commit failed:\n\n${e?.message ?? e}\n\nSQL:\n${lastSql}`);
     }
   };
 
@@ -284,13 +286,14 @@ export default function SchemaColumns({ connectionId, database, table, isActive,
 
   const handleDrop = async (field: string) => {
     if (!confirm(`Drop column \`${field}\` from \`${table}\`? This cannot be undone.`)) return;
+    const sql = `ALTER TABLE \`${database}\`.\`${table}\` DROP COLUMN \`${field}\``;
     try {
-      await ipc.schemaAlterTable(connectionId, `ALTER TABLE \`${database}\`.\`${table}\` DROP COLUMN \`${field}\``);
+      await ipc.schemaAlterTable(connectionId, sql);
       setStatus(`Dropped column ${field}`, 'success');
       onSchemaChanged();
       await load();
     } catch (e: any) {
-      setErrorMsg(`Drop failed:\n${e?.message ?? e}`);
+      setErrorMsg(`Drop failed:\n\n${e?.message ?? e}\n\nSQL:\n${sql}`);
     }
   };
 

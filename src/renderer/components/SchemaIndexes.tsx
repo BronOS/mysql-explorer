@@ -69,7 +69,7 @@ export default function SchemaIndexes({ connectionId, database, table, columnInf
       onSchemaChanged();
       await load();
     } catch (e: any) {
-      setErrorMsg(`Failed to add index:\n${e?.message ?? e}`);
+      setErrorMsg(`Failed to add index:\n\n${e?.message ?? e}\n\nSQL:\n${sql}`);
     }
   };
 
@@ -86,7 +86,7 @@ export default function SchemaIndexes({ connectionId, database, table, columnInf
       onSchemaChanged();
       await load();
     } catch (e: any) {
-      setErrorMsg(`Failed to edit index:\n${e?.message ?? e}`);
+      setErrorMsg(`Failed to edit index:\n\n${e?.message ?? e}\n\nSQL:\n${sql}`);
     }
   };
 
@@ -102,7 +102,7 @@ export default function SchemaIndexes({ connectionId, database, table, columnInf
       onSchemaChanged();
       await load();
     } catch (e: any) {
-      setErrorMsg(`Failed to drop index:\n${e?.message ?? e}`);
+      setErrorMsg(`Failed to drop index:\n\n${e?.message ?? e}\n\nSQL:\n${sql}`);
     }
   };
 
