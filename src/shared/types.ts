@@ -88,6 +88,13 @@ export interface IndexInfo {
   unique: boolean;
 }
 
+export interface Snippet {
+  id: string;
+  name: string;
+  prefix: string;
+  body: string;
+}
+
 export interface SchemaTree {
   [connectionId: string]: {
     databases: {

@@ -44,6 +44,10 @@ const electronAPI = {
   schemaCacheLoad: () => ipcRenderer.invoke('schema:cache-load'),
   schemaCacheSave: (cache: any) => ipcRenderer.invoke('schema:cache-save', cache),
 
+  // Snippets
+  snippetsLoad: () => ipcRenderer.invoke('snippets:load'),
+  snippetsSave: (snippets: any[]) => ipcRenderer.invoke('snippets:save', snippets),
+
   // Import
   importDataGrip: () => ipcRenderer.invoke('import:datagrip'),
 

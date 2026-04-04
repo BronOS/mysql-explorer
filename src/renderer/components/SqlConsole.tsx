@@ -3,16 +3,17 @@ import CodeMirror, { ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { sql, MySQL } from '@codemirror/lang-sql';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { keymap, Decoration, DecorationSet, EditorView } from '@codemirror/view';
-import { Prec, StateField, EditorState } from '@codemirror/state';
+import { Prec, StateField, StateEffect, EditorState } from '@codemirror/state';
 import { autocompletion, CompletionContext, CompletionResult, Completion, startCompletion, completionStatus } from '@codemirror/autocomplete';
 import { format as formatSql } from 'sql-formatter';
 import { useIpc } from '../hooks/use-ipc';
 import { getUiState, setUiState, loadUiStateAsync } from '../hooks/use-ui-state';
 import { useDebounce } from '../hooks/use-debounce';
 import { useAppContext } from '../context/app-context';
-import { TabInfo, QueryResult } from '../../shared/types';
+import { TabInfo, QueryResult, Snippet } from '../../shared/types';
 import ResultTable from './ResultTable';
 import Pagination from './Pagination';
+import SnippetDialog from './SnippetDialog';
 
 interface Props {
   tab: TabInfo;
@@ -115,6 +116,86 @@ function computeActiveDecorations(state: any): DecorationSet {
   return Decoration.set(decorations, true);
 }
 
+// --- Snippet placeholder system ---
+// Tracks {{placeholder}} positions after snippet insertion, allows Tab to jump between them
+
+interface PlaceholderRange { from: number; to: number }
+
+const setPlaceholdersEffect = StateEffect.define<PlaceholderRange[]>();
+const clearPlaceholdersEffect = StateEffect.define<void>();
+
+const placeholderMark = Decoration.mark({ class: 'cm-snippet-placeholder' });
+
+const snippetPlaceholderField = StateField.define<PlaceholderRange[]>({
+  create() { return []; },
+  update(ranges, tr) {
+    for (const effect of tr.effects) {
+      if (effect.is(setPlaceholdersEffect)) return effect.value;
+      if (effect.is(clearPlaceholdersEffect)) return [];
+    }
+    if (!tr.docChanged || ranges.length === 0) return ranges;
+    // Map placeholder positions through document changes
+    const updated: PlaceholderRange[] = [];
+    for (const r of ranges) {
+      const from = tr.changes.mapPos(r.from, 1);
+      const to = tr.changes.mapPos(r.to, -1);
+      if (from < to) updated.push({ from, to });
+    }
+    return updated;
+  },
+});
+
+const snippetPlaceholderDecorations = StateField.define<DecorationSet>({
+  create() { return Decoration.none; },
+  update(_deco, tr) {
+    const ranges = tr.state.field(snippetPlaceholderField);
+    if (ranges.length === 0) return Decoration.none;
+    return Decoration.set(
+      ranges.map(r => placeholderMark.range(r.from, r.to)),
+      true
+    );
+  },
+  provide: f => EditorView.decorations.from(f),
+});
+
+function selectNextPlaceholder(view: EditorView): boolean {
+  const ranges = view.state.field(snippetPlaceholderField);
+  if (ranges.length === 0) return false;
+  const cursor = view.state.selection.main.head;
+  // Find next placeholder at or after cursor, or wrap to first
+  const next = ranges.find(r => r.from >= cursor) || ranges[0];
+  // Remove it from the list so next Tab goes to the following one
+  const remaining = ranges.filter(r => r !== next);
+  view.dispatch({
+    selection: { anchor: next.from, head: next.to },
+    effects: setPlaceholdersEffect.of(remaining),
+  });
+  return true;
+}
+
+function insertSnippetWithPlaceholders(view: EditorView, body: string, from: number, to?: number): void {
+  const insertAt = to !== undefined ? to : from;
+  view.dispatch({ changes: { from, to: insertAt, insert: body } });
+
+  // Find all {{placeholder}} positions in the inserted text
+  const placeholders: PlaceholderRange[] = [];
+  const re = /\{\{.+?\}\}/g;
+  let m;
+  while ((m = re.exec(body)) !== null) {
+    placeholders.push({ from: from + m.index, to: from + m.index + m[0].length });
+  }
+
+  if (placeholders.length > 0) {
+    // Set placeholders and select the first one
+    const first = placeholders[0];
+    const rest = placeholders.slice(1);
+    view.dispatch({
+      selection: { anchor: first.from, head: first.to },
+      effects: setPlaceholdersEffect.of(rest),
+    });
+  }
+}
+
 export default function SqlConsole({ tab, isActive }: Props) {
   const ipc = useIpc();
   const { setStatus } = useAppContext();
@@ -125,10 +206,17 @@ export default function SqlConsole({ tab, isActive }: Props) {
   const [running, setRunning] = useState(false);
   const [selectedDb, setSelectedDb] = useState('');
   const [dividerY, setDividerY] = useState(250);
+  const [showSnippets, setShowSnippets] = useState(false);
+  const [snippets, setSnippets] = useState<Snippet[]>([]);
   const dragging = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<ReactCodeMirrorRef>(null);
   const columnOnlyMode = useRef(false);
+
+  // Load snippets for autocomplete
+  useEffect(() => {
+    ipc.snippetsLoad().then((s: Snippet[]) => setSnippets(s));
+  }, []);
 
   // Focus editor when tab becomes active
   useEffect(() => {
@@ -238,6 +326,15 @@ export default function SqlConsole({ tab, isActive }: Props) {
     }
   };
 
+  const handleInsertSnippet = (body: string) => {
+    setShowSnippets(false);
+    const view = editorRef.current?.view;
+    if (!view) return;
+    const pos = view.state.selection.main.head;
+    insertSnippetWithPlaceholders(view, body, pos);
+    view.focus();
+  };
+
   const handleFormat = () => {
     const view = editorRef.current?.view;
     if (!view) return;
@@ -288,6 +385,13 @@ export default function SqlConsole({ tab, isActive }: Props) {
     { key: 'Mod-Enter', run: () => { handleRunRef.current(); return true; } },
     { key: 'Mod-Shift-f', run: () => { handleFormatRef.current(); return true; } },
     { key: 'Ctrl-Space', run: (view) => { columnOnlyMode.current = true; startCompletion(view); return true; } },
+    { key: 'Tab', run: (view) => selectNextPlaceholder(view) },
+    { key: 'Escape', run: (view) => {
+      const ranges = view.state.field(snippetPlaceholderField);
+      if (ranges.length === 0) return false;
+      view.dispatch({ effects: clearPlaceholdersEffect.of(undefined) });
+      return true;
+    }},
   ])), []);
 
   // Cmd+R runs query
@@ -418,12 +522,42 @@ export default function SqlConsole({ tab, isActive }: Props) {
     return EditorState.languageData.of(() => [{ autocomplete: completeColumns }]);
   }, [allColumnsMap]);
 
+  // Snippet autocomplete: triggered by @prefix
+  const snippetCompletionExt = useMemo(() => {
+    function completeSnippets(context: CompletionContext): CompletionResult | null {
+      const word = context.matchBefore(/@[\w-]*/);
+      if (!word) return null;
+      const prefix = word.text.slice(1); // remove @
+      const options: Completion[] = snippets
+        .filter(s => s.prefix)
+        .filter(s => !prefix || s.prefix.toLowerCase().includes(prefix.toLowerCase()) || s.name.toLowerCase().includes(prefix.toLowerCase()))
+        .map(s => ({
+          label: `@${s.prefix}`,
+          displayLabel: s.name,
+          detail: s.prefix,
+          type: 'text',
+          info: s.body.length > 100 ? s.body.slice(0, 100) + '...' : s.body,
+          boost: 100,
+          apply: (view: EditorView, _completion: Completion, from: number, to: number) => {
+            insertSnippetWithPlaceholders(view, s.body, from, to);
+          },
+        }));
+      if (options.length === 0) return null;
+      return { from: word.from, options, validFor: /^@[\w-]*$/ };
+    }
+
+    return EditorState.languageData.of(() => [{ autocomplete: completeSnippets }]);
+  }, [snippets]);
+
   const extensions = useMemo(() => [
     editorKeymaps,
     activeQueryHighlight,
+    snippetPlaceholderField,
+    snippetPlaceholderDecorations,
     sql({ dialect: MySQL, schema: schemaObj }),
     columnCompletionExt,
-  ], [editorKeymaps, schemaObj, columnCompletionExt]);
+    snippetCompletionExt,
+  ], [editorKeymaps, schemaObj, columnCompletionExt, snippetCompletionExt]);
 
   // Resizer
   const dividerRef = useRef(dividerY);
@@ -467,6 +601,10 @@ export default function SqlConsole({ tab, isActive }: Props) {
             Format
           </button>
           <span className="sql-shortcut">⌘+Shift+F</span>
+          <button className="btn btn-secondary" onClick={() => setShowSnippets(true)} style={{ marginLeft: 8 }}>
+            Snippets
+          </button>
+          <span className="sql-shortcut">@prefix</span>
           <select
             className="select"
             value={selectedDb}
@@ -530,6 +668,13 @@ export default function SqlConsole({ tab, isActive }: Props) {
           </div>
         )}
       </div>
+
+      {showSnippets && (
+        <SnippetDialog
+          onClose={() => { setShowSnippets(false); ipc.snippetsLoad().then((s: Snippet[]) => setSnippets(s)); }}
+          onInsert={handleInsertSnippet}
+        />
+      )}
     </div>
   );
 }

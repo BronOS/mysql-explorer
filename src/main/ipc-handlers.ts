@@ -138,6 +138,10 @@ export function registerIpcHandlers(
   ipcMain.handle('schema:cache-load', () => fileManager.loadSchemaCache());
   ipcMain.handle('schema:cache-save', (_, cache) => fileManager.saveSchemaCache(cache));
 
+  // Snippets
+  ipcMain.handle('snippets:load', () => fileManager.loadSnippets());
+  ipcMain.handle('snippets:save', (_, snippets) => fileManager.saveSnippets(snippets));
+
   // Import
   ipcMain.handle('import:datagrip', () => importDataGripConnections());
 

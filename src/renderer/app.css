@@ -162,6 +162,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .sql-toolbar { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: #3c3f41; border-bottom: 1px solid #515151; }
 .sql-shortcut { color: #666; font-size: 10px; }
 .cm-active-query { background: rgba(75, 110, 175, 0.1); border-left: 2px solid #4b6eaf; }
+.cm-snippet-placeholder { background: rgba(74, 222, 128, 0.2); border-radius: 2px; outline: 1px solid rgba(74, 222, 128, 0.4); }
 .cm-editor .cm-cursor { border-left-color: #ffffff !important; }
 .sql-codemirror { flex: 1; min-height: 0; }
 .sql-codemirror .cm-scroller { scrollbar-width: thin; scrollbar-color: transparent transparent; }
