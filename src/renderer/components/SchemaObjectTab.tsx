@@ -131,14 +131,7 @@ export default function SchemaObjectTab({ tab, isActive }: Props) {
     setStatus('Executing DDL...', 'info');
     try {
       await ipc.schemaExecuteDdl(tab.connectionId, database, confirmSql);
-      // Reload DDL to get the canonical form from the server
-      if (!isNew && objectName) {
-        const newDdl = await fetchDdl(ipc, tab.connectionId, database, objectType, objectName);
-        setSavedDdl(newDdl);
-        setEditCode(newDdl);
-      } else {
-        setSavedDdl(editCode.trim());
-      }
+      setSavedDdl(editCode.trim());
       setIsEditMode(false);
       // Refresh sidebar object list
       const pluralMap: Record<string, 'views' | 'procedures' | 'functions' | 'triggers' | 'events'> = {
