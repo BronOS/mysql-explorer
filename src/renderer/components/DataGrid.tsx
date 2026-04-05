@@ -3,6 +3,7 @@ import { useReactTable, getCoreRowModel, flexRender, ColumnDef } from '@tanstack
 import { ColumnMeta } from '../../shared/types';
 import CellEditor from './CellEditor';
 import TextEditModal from './TextEditModal';
+import { formatRows } from '../utils/format-rows';
 
 interface CellContextMenu {
   x: number;
@@ -60,41 +61,12 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
     setLastClickedRow(index);
   };
 
-  const cellToString = (val: unknown): string => val === null || val === undefined ? 'NULL' : String(val);
   const colNames = columns.map(c => c.name);
 
   const copyRows = (format: string) => {
     const indices = selectedRows.size > 0 ? selectedRows : undefined;
     const filtered = indices ? allRows.filter((_, i) => indices.has(i)) : allRows;
-    let text = '';
-    switch (format) {
-      case 'tsv':
-        text = colNames.join('\t') + '\n' + filtered.map(r => colNames.map(c => cellToString(r[c])).join('\t')).join('\n');
-        break;
-      case 'csv': {
-        const esc = (v: string) => v.includes(',') || v.includes('"') || v.includes('\n') ? `"${v.replace(/"/g, '""')}"` : v;
-        text = colNames.map(esc).join(',') + '\n' + filtered.map(r => colNames.map(c => esc(cellToString(r[c]))).join(',')).join('\n');
-        break;
-      }
-      case 'markdown':
-        text = '| ' + colNames.join(' | ') + ' |\n| ' + colNames.map(() => '---').join(' | ') + ' |\n' +
-          filtered.map(r => '| ' + colNames.map(c => cellToString(r[c])).join(' | ') + ' |').join('\n');
-        break;
-      case 'json':
-        text = JSON.stringify(filtered.map(r => { const o: any = {}; colNames.forEach(c => o[c] = r[c]); return o; }), null, 2);
-        break;
-      case 'sql':
-        text = filtered.map(r => {
-          const vals = colNames.map(c => { const v = r[c]; return v === null || v === undefined ? 'NULL' : typeof v === 'number' ? String(v) : `'${String(v).replace(/'/g, "\\'")}'`; }).join(', ');
-          return `INSERT INTO table_name (${colNames.map(c => '`' + c + '`').join(', ')}) VALUES (${vals});`;
-        }).join('\n');
-        break;
-      case 'html':
-        text = `<table>\n<thead>\n<tr>${colNames.map(c => `<th>${c}</th>`).join('')}</tr>\n</thead>\n<tbody>\n` +
-          filtered.map(r => '<tr>' + colNames.map(c => `<td>${cellToString(r[c])}</td>`).join('') + '</tr>').join('\n') +
-          '\n</tbody>\n</table>';
-        break;
-    }
+    const text = formatRows(filtered, colNames, format as any, 'table_name');
     navigator.clipboard.writeText(text);
     const count = indices ? indices.size : allRows.length;
     const labels: Record<string, string> = { tsv: 'TSV', csv: 'CSV', markdown: 'Markdown', json: 'JSON', sql: 'SQL INSERT', html: 'HTML Table' };
