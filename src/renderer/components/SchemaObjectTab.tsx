@@ -55,7 +55,7 @@ async function fetchDdl(
 
 export default function SchemaObjectTab({ tab, isActive }: Props) {
   const ipc = useIpc();
-  const { setStatus } = useAppContext();
+  const { setStatus, dispatch } = useAppContext();
 
   const objectType = (tab.objectType ?? 'view') as ObjectType;
   const objectName = tab.objectName;
@@ -140,6 +140,17 @@ export default function SchemaObjectTab({ tab, isActive }: Props) {
         setSavedDdl(editCode.trim());
       }
       setIsEditMode(false);
+      // Refresh sidebar object list
+      const pluralMap: Record<string, 'views' | 'procedures' | 'functions' | 'triggers' | 'events'> = {
+        view: 'views', procedure: 'procedures', function: 'functions', trigger: 'triggers', event: 'events',
+      };
+      const fetcherMap: Record<string, string> = {
+        view: 'schemaViews', procedure: 'schemaProcedures', function: 'schemaFunctions', trigger: 'schemaTriggers', event: 'schemaEvents',
+      };
+      try {
+        const items: string[] = await (ipc as any)[fetcherMap[objectType]](tab.connectionId, database);
+        dispatch({ type: 'SET_OBJECTS', connectionId: tab.connectionId, database, objectType: pluralMap[objectType], items });
+      } catch {}
       setStatus(`${OBJECT_TYPE_LABELS[objectType]} saved successfully`, 'success');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
