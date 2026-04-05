@@ -425,7 +425,8 @@ export default function Sidebar({ width }: { width: number }) {
                       {isGroupExpanded && items.map(name => {
                         const isViewData = objType === 'view';
                         const isObjActive = isViewData
-                          ? activeTab?.type === 'table' && activeTab.connectionId === conn.id && activeTab.database === db.name && activeTab.table === name
+                          ? (activeTab?.type === 'table' && activeTab.connectionId === conn.id && activeTab.database === db.name && activeTab.table === name) ||
+                            (activeTab?.type === 'object' && activeTab.connectionId === conn.id && activeTab.database === db.name && activeTab.objectName === name && activeTab.objectType === 'view')
                           : activeTab?.type === 'object' && activeTab.connectionId === conn.id && activeTab.database === db.name && activeTab.objectName === name && activeTab.objectType === objType;
                         return (
                           <div key={name} className="tree-node-indent" ref={isObjActive ? activeNodeRef : undefined}>
