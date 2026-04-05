@@ -2,6 +2,9 @@ import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import ConnectionDialog from './ConnectionDialog';
 import CreateTableDialog from './CreateTableDialog';
 import CreateDatabaseDialog from './CreateDatabaseDialog';
+import ImportSqlDialog from './ImportSqlDialog';
+import ExportTableDialog from './ExportTableDialog';
+import ExportDatabaseDialog from './ExportDatabaseDialog';
 import { useAppContext } from '../context/app-context';
 import { useIpc } from '../hooks/use-ipc';
 import { ConnectionConfig } from '../../shared/types';
@@ -21,6 +24,9 @@ export default function Sidebar({ width }: { width: number }) {
   const [dbContextMenu, setDbContextMenu] = useState<{ x: number; y: number; conn: ConnectionConfig; database: string } | null>(null);
   const [showCreateTable, setShowCreateTable] = useState<{ connectionId: string; database: string; conn: ConnectionConfig } | null>(null);
   const [showCreateDatabase, setShowCreateDatabase] = useState<{ connectionId: string } | null>(null);
+  const [showImport, setShowImport] = useState<{ connectionId: string; database?: string } | null>(null);
+  const [showExportTable, setShowExportTable] = useState<{ connectionId: string; database: string; table: string } | null>(null);
+  const [showExportDb, setShowExportDb] = useState<{ connectionId: string; database: string } | null>(null);
   const [expandedConns, setExpandedConns] = useState<Set<string>>(new Set());
   const [expandedDbs, setExpandedDbs] = useState<Set<string>>(new Set());
   const [connecting, setConnecting] = useState<Set<string>>(new Set());
@@ -267,6 +273,9 @@ export default function Sidebar({ width }: { width: number }) {
       case 'new-database':
         setShowCreateDatabase({ connectionId: conn.id });
         break;
+      case 'import-sql':
+        setShowImport({ connectionId: conn.id });
+        break;
     }
     setContextMenu(null);
   };
@@ -355,10 +364,13 @@ export default function Sidebar({ width }: { width: number }) {
       )}
 
       {contextMenu && (
-        <div className="context-menu" style={menuPosition(contextMenu.x, contextMenu.y, expandedConns.has(contextMenu.connectionId) ? 165 : 130)}>
+        <div className="context-menu" style={menuPosition(contextMenu.x, contextMenu.y, expandedConns.has(contextMenu.connectionId) ? 200 : 130)}>
           <div className="context-menu-item" onClick={() => handleContextAction('console')}>Open SQL Console</div>
           {expandedConns.has(contextMenu.connectionId) && (
             <div className="context-menu-item" onClick={() => handleContextAction('new-database')}>New Database</div>
+          )}
+          {expandedConns.has(contextMenu.connectionId) && (
+            <div className="context-menu-item" onClick={() => handleContextAction('import-sql')}>Import SQL</div>
           )}
           <div className="context-menu-item" onClick={() => handleContextAction('edit')}>Edit</div>
           <div className="context-menu-item" onClick={() => handleContextAction('disconnect')}>Disconnect</div>
@@ -367,7 +379,7 @@ export default function Sidebar({ width }: { width: number }) {
       )}
 
       {tableContextMenu && (
-        <div className="context-menu" style={menuPosition(tableContextMenu.x, tableContextMenu.y, 105)}>
+        <div className="context-menu" style={menuPosition(tableContextMenu.x, tableContextMenu.y, 140)}>
           <div className="context-menu-item" onClick={() => {
             openTab({ connectionId: tableContextMenu.conn.id, connectionName: tableContextMenu.conn.name, connectionColor: tableContextMenu.conn.color, type: 'table', database: tableContextMenu.database, table: tableContextMenu.table });
             setTableContextMenu(null);
@@ -376,6 +388,10 @@ export default function Sidebar({ width }: { width: number }) {
             openTab({ connectionId: tableContextMenu.conn.id, connectionName: tableContextMenu.conn.name, connectionColor: tableContextMenu.conn.color, type: 'schema', database: tableContextMenu.database, table: tableContextMenu.table });
             setTableContextMenu(null);
           }}>View Schema</div>
+          <div className="context-menu-item" onClick={() => {
+            setShowExportTable({ connectionId: tableContextMenu.conn.id, database: tableContextMenu.database, table: tableContextMenu.table });
+            setTableContextMenu(null);
+          }}>Export Table</div>
           <div className="context-menu-item" style={{ color: '#ef4444' }} onClick={async () => {
             const { conn, database, table } = tableContextMenu;
             setTableContextMenu(null);
@@ -397,11 +413,19 @@ export default function Sidebar({ width }: { width: number }) {
       )}
 
       {dbContextMenu && (
-        <div className="context-menu" style={menuPosition(dbContextMenu.x, dbContextMenu.y, 70)}>
+        <div className="context-menu" style={menuPosition(dbContextMenu.x, dbContextMenu.y, 140)}>
           <div className="context-menu-item" onClick={() => {
             setShowCreateTable({ connectionId: dbContextMenu.conn.id, database: dbContextMenu.database, conn: dbContextMenu.conn });
             setDbContextMenu(null);
           }}>New Table</div>
+          <div className="context-menu-item" onClick={() => {
+            setShowImport({ connectionId: dbContextMenu.conn.id, database: dbContextMenu.database });
+            setDbContextMenu(null);
+          }}>Import SQL</div>
+          <div className="context-menu-item" onClick={() => {
+            setShowExportDb({ connectionId: dbContextMenu.conn.id, database: dbContextMenu.database });
+            setDbContextMenu(null);
+          }}>Export Database</div>
           <div className="context-menu-item" style={{ color: '#ef4444' }} onClick={async () => {
             const { conn, database } = dbContextMenu;
             setDbContextMenu(null);
@@ -465,6 +489,38 @@ export default function Sidebar({ width }: { width: number }) {
             });
           }}
           onClose={() => setShowCreateDatabase(null)}
+        />
+      )}
+
+      {showImport && (
+        <ImportSqlDialog
+          connectionId={showImport.connectionId}
+          database={showImport.database}
+          onClose={() => setShowImport(null)}
+          onDone={async () => {
+            // Refresh schema after import
+            if (showImport.database) {
+              const tables = await ipc.schemaTables(showImport.connectionId, showImport.database);
+              dispatch({ type: 'SET_TABLES', connectionId: showImport.connectionId, database: showImport.database, tables });
+            }
+          }}
+        />
+      )}
+
+      {showExportTable && (
+        <ExportTableDialog
+          connectionId={showExportTable.connectionId}
+          database={showExportTable.database}
+          table={showExportTable.table}
+          onClose={() => setShowExportTable(null)}
+        />
+      )}
+
+      {showExportDb && (
+        <ExportDatabaseDialog
+          connectionId={showExportDb.connectionId}
+          database={showExportDb.database}
+          onClose={() => setShowExportDb(null)}
         />
       )}
     </div>
