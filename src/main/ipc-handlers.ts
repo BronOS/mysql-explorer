@@ -137,6 +137,16 @@ export function registerIpcHandlers(
     return schemaBrowser.createEventDDL(pool, database, name);
   });
 
+  ipcMain.handle('schema:execute-ddl', async (_, connectionId, sql) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    await pool.query(sql);
+  });
+
+  ipcMain.handle('schema:drop-object', async (_, connectionId, database, objectType, name) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    await pool.query(`DROP ${objectType} \`${database}\`.\`${name}\``);
+  });
+
   // Query
   ipcMain.handle('query:use-database', async (_, connectionId, database) => {
     const pool = await connectionManager.ensureConnected(connectionId);

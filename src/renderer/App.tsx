@@ -6,6 +6,7 @@ import TabBar from './components/TabBar';
 import TableView from './components/TableView';
 import SqlConsole from './components/SqlConsole';
 import SchemaView from './components/SchemaView';
+import SchemaObjectTab from './components/SchemaObjectTab';
 
 function StatusBar() {
   const { status, tabs, activeTabId, connections } = useAppContext();
@@ -20,6 +21,7 @@ function StatusBar() {
         {conn && <span style={{ color: conn.color }}>{conn.name}</span>}
         {activeTab?.type === 'table' && <span> — {activeTab.database}.{activeTab.table}</span>}
         {activeTab?.type === 'console' && <span> — SQL Console</span>}
+        {activeTab?.type === 'object' && <span> — {activeTab.objectType}: {activeTab.objectName || '(new)'}</span>}
       </span>
       <span className="status-center" style={{ color: statusColor }}>
         {status?.text || ''}
@@ -108,6 +110,7 @@ export default function App() {
               {tab.type === 'table' && <TableView tab={tab} isActive={tab.id === activeTabId} />}
               {tab.type === 'console' && <SqlConsole tab={tab} isActive={tab.id === activeTabId} />}
               {tab.type === 'schema' && <SchemaView tab={tab} isActive={tab.id === activeTabId} />}
+              {tab.type === 'object' && <SchemaObjectTab tab={tab} isActive={tab.id === activeTabId} />}
             </div>
           ))}
         </div>

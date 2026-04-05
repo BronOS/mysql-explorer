@@ -32,6 +32,8 @@ const electronAPI = {
   schemaCreateTrigger: (connectionId: string, database: string, name: string) => ipcRenderer.invoke('schema:create-trigger', connectionId, database, name),
   schemaEvents: (connectionId: string, database: string) => ipcRenderer.invoke('schema:events', connectionId, database),
   schemaCreateEvent: (connectionId: string, database: string, name: string) => ipcRenderer.invoke('schema:create-event', connectionId, database, name),
+  schemaExecuteDdl: (connectionId: string, sql: string) => ipcRenderer.invoke('schema:execute-ddl', connectionId, sql),
+  schemaDropObject: (connectionId: string, database: string, objectType: string, name: string) => ipcRenderer.invoke('schema:drop-object', connectionId, database, objectType, name),
 
   // Query
   queryUseDatabase: (connectionId: string, database: string) => ipcRenderer.invoke('query:use-database', connectionId, database),

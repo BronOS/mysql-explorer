@@ -32,6 +32,9 @@ export default function Sidebar({ width }: { width: number }) {
   const [connecting, setConnecting] = useState<Set<string>>(new Set());
   const [loadingDbs, setLoadingDbs] = useState<Set<string>>(new Set());
   const [tableFilter, setTableFilter] = useState('');
+  const [expandedObjectGroups, setExpandedObjectGroups] = useState<Set<string>>(new Set());
+  const [objectContextMenu, setObjectContextMenu] = useState<{ x: number; y: number; conn: ConnectionConfig; database: string; objectType: 'view' | 'procedure' | 'function' | 'trigger' | 'event'; objectName: string } | null>(null);
+  const [objectGroupContextMenu, setObjectGroupContextMenu] = useState<{ x: number; y: number; conn: ConnectionConfig; database: string; objectType: 'view' | 'procedure' | 'function' | 'trigger' | 'event' } | null>(null);
   const initialized = useRef(false);
 
   const { connections, schema, dispatch, openTab, closeTab, setStatus, tabs, activeTabId } = useAppContext();
@@ -159,7 +162,7 @@ export default function Sidebar({ width }: { width: number }) {
     };
     init();
 
-    const handler = () => { setContextMenu(null); setTableContextMenu(null); setDbContextMenu(null); };
+    const handler = () => { setContextMenu(null); setTableContextMenu(null); setDbContextMenu(null); setObjectContextMenu(null); setObjectGroupContextMenu(null); };
     window.addEventListener('click', handler);
     return () => window.removeEventListener('click', handler);
   }, []);
@@ -226,6 +229,37 @@ export default function Sidebar({ width }: { width: number }) {
     } finally {
       setLoadingDbs(prev => { const s = new Set(prev); s.delete(key); return s; });
     }
+  };
+
+  const objectTypeIpcMap: Record<string, string> = {
+    view: 'schemaViews',
+    procedure: 'schemaProcedures',
+    function: 'schemaFunctions',
+    trigger: 'schemaTriggers',
+    event: 'schemaEvents',
+  };
+
+  const objectTypePluralMap: Record<string, 'views' | 'procedures' | 'functions' | 'triggers' | 'events'> = {
+    view: 'views',
+    procedure: 'procedures',
+    function: 'functions',
+    trigger: 'triggers',
+    event: 'events',
+  };
+
+  const toggleObjectGroup = async (connectionId: string, database: string, objectType: string) => {
+    const key = `${connectionId}:${database}:${objectType}`;
+    if (expandedObjectGroups.has(key)) {
+      setExpandedObjectGroups(prev => { const s = new Set(prev); s.delete(key); return s; });
+      return;
+    }
+    const fetcher = objectTypeIpcMap[objectType];
+    const plural = objectTypePluralMap[objectType];
+    try {
+      const items: string[] = await (ipc as any)[fetcher](connectionId, database);
+      dispatch({ type: 'SET_OBJECTS', connectionId, database, objectType: plural, items });
+    } catch {}
+    setExpandedObjectGroups(prev => new Set(prev).add(key));
   };
 
   const handleTableClick = (conn: ConnectionConfig, database: string, table: string) => {
@@ -347,6 +381,47 @@ export default function Sidebar({ width }: { width: number }) {
                     </div>
                   );
                 })}
+                {expandedDbs.has(`${conn.id}:${db.name}`) && ['view', 'procedure', 'function', 'trigger', 'event'].map(objType => {
+                  const plural = objType === 'procedure' ? 'procedures' : objType === 'function' ? 'functions' : objType === 'trigger' ? 'triggers' : objType === 'event' ? 'events' : 'views';
+                  const label = plural.charAt(0).toUpperCase() + plural.slice(1);
+                  const items: string[] = (db as any)[plural] || [];
+                  const groupKey = `${conn.id}:${db.name}:${objType}`;
+                  const isGroupExpanded = expandedObjectGroups.has(groupKey);
+                  return (
+                    <div key={objType} className="tree-node-indent">
+                      <div
+                        className="tree-node"
+                        style={{ opacity: items.length === 0 && !isGroupExpanded ? 0.4 : 1 }}
+                        onClick={() => toggleObjectGroup(conn.id, db.name, objType)}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          setObjectGroupContextMenu({ x: e.clientX, y: e.clientY, conn, database: db.name, objectType: objType as any });
+                        }}
+                      >
+                        <span className="tree-arrow">{isGroupExpanded ? '▼' : '▶'}</span>
+                        <span>{label} ({items.length})</span>
+                      </div>
+                      {isGroupExpanded && items.map(name => {
+                        const isObjActive = activeTab?.type === 'object' && activeTab.connectionId === conn.id && activeTab.database === db.name && activeTab.objectName === name && activeTab.objectType === objType;
+                        return (
+                          <div key={name} className="tree-node-indent">
+                            <div
+                              className={`tree-node ${isObjActive ? 'tree-node-active' : ''}`}
+                              onClick={() => openTab({ connectionId: conn.id, connectionName: conn.name, connectionColor: conn.color, type: 'object', database: db.name, objectType: objType as any, objectName: name })}
+                              onContextMenu={(e) => {
+                                e.preventDefault();
+                                setObjectContextMenu({ x: e.clientX, y: e.clientY, conn, database: db.name, objectType: objType as any, objectName: name });
+                              }}
+                            >
+                              <span style={{ width: 12 }}></span>
+                              <span>{name}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
               </div>
             ))}
           </div>
@@ -450,6 +525,44 @@ export default function Sidebar({ width }: { width: number }) {
               setStatus(`Drop database failed: ${e?.message ?? e}`, 'error');
             }
           }}>Delete Database</div>
+        </div>
+      )}
+
+      {objectGroupContextMenu && (
+        <div className="context-menu" style={menuPosition(objectGroupContextMenu.x, objectGroupContextMenu.y, 35)}>
+          <div className="context-menu-item" onClick={() => {
+            const { conn, database, objectType } = objectGroupContextMenu;
+            openTab({ connectionId: conn.id, connectionName: conn.name, connectionColor: conn.color, type: 'object', database, objectType });
+            setObjectGroupContextMenu(null);
+          }}>New {objectGroupContextMenu.objectType.charAt(0).toUpperCase() + objectGroupContextMenu.objectType.slice(1)}</div>
+        </div>
+      )}
+
+      {objectContextMenu && (
+        <div className="context-menu" style={menuPosition(objectContextMenu.x, objectContextMenu.y, 70)}>
+          <div className="context-menu-item" onClick={() => {
+            const { conn, database, objectType, objectName } = objectContextMenu;
+            openTab({ connectionId: conn.id, connectionName: conn.name, connectionColor: conn.color, type: 'object', database, objectType, objectName });
+            setObjectContextMenu(null);
+          }}>Open</div>
+          <div className="context-menu-item" style={{ color: '#ef4444' }} onClick={async () => {
+            const { conn, database, objectType, objectName } = objectContextMenu;
+            const typeSql = objectType.toUpperCase();
+            setObjectContextMenu(null);
+            if (!confirm(`Drop ${objectType} \`${objectName}\`? This cannot be undone.`)) return;
+            try {
+              await ipc.schemaDropObject(conn.id, database, typeSql, objectName);
+              tabs.filter(t => t.connectionId === conn.id && t.database === database && t.objectType === objectType && t.objectName === objectName)
+                .forEach(t => closeTab(t.id));
+              const plural = objectType === 'procedure' ? 'procedures' : objectType === 'function' ? 'functions' : objectType === 'trigger' ? 'triggers' : objectType === 'event' ? 'events' : 'views';
+              const fetcher = objectType === 'view' ? 'schemaViews' : objectType === 'procedure' ? 'schemaProcedures' : objectType === 'function' ? 'schemaFunctions' : objectType === 'trigger' ? 'schemaTriggers' : 'schemaEvents';
+              const items: string[] = await (ipc as any)[fetcher](conn.id, database);
+              dispatch({ type: 'SET_OBJECTS', connectionId: conn.id, database, objectType: plural, items });
+              setStatus(`Dropped ${objectType} ${objectName}`, 'success');
+            } catch (e: any) {
+              setStatus(`Drop failed: ${e?.message ?? e}`, 'error');
+            }
+          }}>Drop</div>
         </div>
       )}
 
