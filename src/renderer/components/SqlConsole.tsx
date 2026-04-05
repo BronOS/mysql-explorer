@@ -14,6 +14,7 @@ import { TabInfo, QueryResult, Snippet } from '../../shared/types';
 import ResultTable from './ResultTable';
 import Pagination from './Pagination';
 import SnippetDialog from './SnippetDialog';
+import ImportSqlDialog from './ImportSqlDialog';
 
 interface Props {
   tab: TabInfo;
@@ -207,6 +208,7 @@ export default function SqlConsole({ tab, isActive }: Props) {
   const [selectedDb, setSelectedDb] = useState('');
   const [dividerY, setDividerY] = useState(250);
   const [showSnippets, setShowSnippets] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [snippets, setSnippets] = useState<Snippet[]>([]);
   const dragging = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -605,6 +607,9 @@ export default function SqlConsole({ tab, isActive }: Props) {
             Snippets
           </button>
           <span className="sql-shortcut">@prefix</span>
+          <button className="btn btn-secondary" onClick={() => setShowImport(true)} style={{ marginLeft: 8 }}>
+            Import SQL
+          </button>
           <select
             className="select"
             value={selectedDb}
@@ -673,6 +678,15 @@ export default function SqlConsole({ tab, isActive }: Props) {
         <SnippetDialog
           onClose={() => { setShowSnippets(false); ipc.snippetsLoad().then((s: Snippet[]) => setSnippets(s)); }}
           onInsert={handleInsertSnippet}
+        />
+      )}
+
+      {showImport && (
+        <ImportSqlDialog
+          connectionId={tab.connectionId}
+          database={selectedDb || undefined}
+          onClose={() => setShowImport(false)}
+          onDone={() => {}}
         />
       )}
     </div>

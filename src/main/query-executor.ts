@@ -1,4 +1,6 @@
 import { Pool } from 'mysql2/promise';
+import fs from 'fs';
+import readline from 'readline';
 import { QueryResult, TableData } from '../shared/types';
 
 const SELECT_PATTERN = /^\s*(SELECT|SHOW|DESCRIBE|EXPLAIN)\b/i;
@@ -111,6 +113,98 @@ export class QueryExecutor {
     const sql = `DELETE FROM \`${database}\`.\`${table}\` WHERE \`${pkColumn}\` = ? LIMIT 1`;
     const [result] = await pool.query(sql, [pkValue]);
     return { affectedRows: (result as any).affectedRows };
+  }
+
+  async importSqlFile(
+    pool: Pool,
+    filePath: string,
+    database: string | undefined,
+    onProgress: (progress: { executed: number; errors: number; currentStatement: string }) => void,
+  ): Promise<{ executed: number; errors: number; errorMessages: string[] }> {
+    const conn = await pool.getConnection();
+    if (database) {
+      await conn.query(`USE \`${database}\``);
+    }
+
+    let executed = 0;
+    let errors = 0;
+    const errorMessages: string[] = [];
+    let buffer = '';
+    let inString: string | null = null;
+    let escaped = false;
+
+    const stream = fs.createReadStream(filePath, { encoding: 'utf-8' });
+    const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
+
+    const executeStatement = async (sql: string) => {
+      const trimmed = sql.trim();
+      if (!trimmed) return;
+      try {
+        await conn.query(trimmed);
+        executed++;
+      } catch (err: any) {
+        errors++;
+        if (errorMessages.length < 50) {
+          errorMessages.push(`${err.message}\n  SQL: ${trimmed.slice(0, 200)}`);
+        }
+      }
+      if ((executed + errors) % 100 === 0) {
+        onProgress({ executed, errors, currentStatement: trimmed.slice(0, 100) });
+      }
+    };
+
+    for await (const line of rl) {
+      // Skip comment-only lines and empty lines
+      const trimmedLine = line.trim();
+      if (trimmedLine.startsWith('--') || trimmedLine.startsWith('#') || trimmedLine === '') {
+        continue;
+      }
+
+      // Parse character by character to handle strings and semicolons correctly
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (escaped) {
+          buffer += ch;
+          escaped = false;
+          continue;
+        }
+        if (ch === '\\') {
+          buffer += ch;
+          escaped = true;
+          continue;
+        }
+        if (inString) {
+          buffer += ch;
+          if (ch === inString) inString = null;
+          continue;
+        }
+        if (ch === '\'' || ch === '"' || ch === '`') {
+          buffer += ch;
+          inString = ch;
+          continue;
+        }
+        if (ch === '-' && line[i + 1] === '-') {
+          // Inline comment — skip rest of line
+          break;
+        }
+        if (ch === ';') {
+          await executeStatement(buffer);
+          buffer = '';
+          continue;
+        }
+        buffer += ch;
+      }
+      buffer += '\n';
+    }
+
+    // Execute any remaining statement without trailing semicolon
+    if (buffer.trim()) {
+      await executeStatement(buffer);
+    }
+
+    conn.release();
+    onProgress({ executed, errors, currentStatement: '' });
+    return { executed, errors, errorMessages };
   }
 
   async insertRows(
