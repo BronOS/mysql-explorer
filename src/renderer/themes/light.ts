@@ -69,6 +69,8 @@ const light: ThemeDefinition = {
     noPkText: '#e65100',
     draftBorder: '#28a745',
     affectedCount: '#e65100',
+    btnSecondary: '#d8d8d8',
+    btnSecondaryHover: '#c8c8c8',
   },
   codemirrorTheme,
 };

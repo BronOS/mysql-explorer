@@ -34,6 +34,8 @@ export interface ThemeColors {
   noPkText: string;
   draftBorder: string;
   affectedCount: string;
+  btnSecondary: string;
+  btnSecondaryHover: string;
 }
 
 export interface ThemeDefinition {

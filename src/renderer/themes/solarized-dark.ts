@@ -69,6 +69,8 @@ const solarizedDark: ThemeDefinition = {
     noPkText: '#b58900',
     draftBorder: '#859900',
     affectedCount: '#cb4b16',
+    btnSecondary: '#0a4050',
+    btnSecondaryHover: '#0d5060',
   },
   codemirrorTheme,
 };

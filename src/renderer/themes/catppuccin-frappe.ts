@@ -69,6 +69,8 @@ const catppuccinFrappe: ThemeDefinition = {
     noPkText: '#e5c890',
     draftBorder: '#a6d189',
     affectedCount: '#ef9f76',
+    btnSecondary: '#414559',
+    btnSecondaryHover: '#51556d',
   },
   codemirrorTheme,
 };

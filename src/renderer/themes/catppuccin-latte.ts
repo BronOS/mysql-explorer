@@ -69,6 +69,8 @@ const catppuccinLatte: ThemeDefinition = {
     noPkText: '#df8e1d',
     draftBorder: '#40a02b',
     affectedCount: '#fe640b',
+    btnSecondary: '#ccd0da',
+    btnSecondaryHover: '#bcc0cc',
   },
   codemirrorTheme,
 };

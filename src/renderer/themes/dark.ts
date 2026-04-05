@@ -39,6 +39,8 @@ const dark: ThemeDefinition = {
     noPkText: '#cc7832',
     draftBorder: '#a5c261',
     affectedCount: '#cc7832',
+    btnSecondary: '#4c5052',
+    btnSecondaryHover: '#5a5d5f',
   },
   codemirrorTheme: () => oneDark,
 };

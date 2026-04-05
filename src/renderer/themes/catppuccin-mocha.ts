@@ -69,6 +69,8 @@ const catppuccinMocha: ThemeDefinition = {
     noPkText: '#f9e2af',
     draftBorder: '#a6e3a1',
     affectedCount: '#fab387',
+    btnSecondary: '#313244',
+    btnSecondaryHover: '#414254',
   },
   codemirrorTheme,
 };

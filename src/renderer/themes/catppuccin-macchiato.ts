@@ -69,6 +69,8 @@ const catppuccinMacchiato: ThemeDefinition = {
     noPkText: '#eed49f',
     draftBorder: '#a6da95',
     affectedCount: '#f5a97f',
+    btnSecondary: '#363a4f',
+    btnSecondaryHover: '#464a5f',
   },
   codemirrorTheme,
 };

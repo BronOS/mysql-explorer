@@ -66,6 +66,8 @@ export function applyThemeColors(colors: ThemeColors): void {
   root.setProperty('--no-pk-text', colors.noPkText);
   root.setProperty('--draft-border', colors.draftBorder);
   root.setProperty('--affected-count', colors.affectedCount);
+  root.setProperty('--btn-secondary', colors.btnSecondary);
+  root.setProperty('--btn-secondary-hover', colors.btnSecondaryHover);
 }
 
 export { type ThemeDefinition, type ThemeColors } from './types';

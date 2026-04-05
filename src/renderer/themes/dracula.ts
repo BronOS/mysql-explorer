@@ -69,6 +69,8 @@ const dracula: ThemeDefinition = {
     noPkText: '#ffb86c',
     draftBorder: '#50fa7b',
     affectedCount: '#ffb86c',
+    btnSecondary: '#44475a',
+    btnSecondaryHover: '#515470',
   },
   codemirrorTheme,
 };

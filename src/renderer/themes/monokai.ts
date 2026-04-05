@@ -69,6 +69,8 @@ const monokai: ThemeDefinition = {
     noPkText: '#e6db74',
     draftBorder: '#a6e22e',
     affectedCount: '#fd971f',
+    btnSecondary: '#4e4e3e',
+    btnSecondaryHover: '#5e5e4e',
   },
   codemirrorTheme,
 };
