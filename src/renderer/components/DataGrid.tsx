@@ -28,9 +28,10 @@ interface Props {
   onDuplicateRow?: (row: Record<string, unknown>) => void;
   onDeleteRow?: (pkValue: unknown) => void;
   onDeleteDraftRow?: (draftId: string) => void;
+  readOnly?: boolean;
 }
 
-export default function DataGrid({ columns, rows, draftRows = [], primaryKey, saveMode, onCellSave, pendingChanges, orderBy, onSort, onDuplicateRow, onDeleteRow, onDeleteDraftRow }: Props) {
+export default function DataGrid({ columns, rows, draftRows = [], primaryKey, saveMode, onCellSave, pendingChanges, orderBy, onSort, onDuplicateRow, onDeleteRow, onDeleteDraftRow, readOnly }: Props) {
   const [textModal, setTextModal] = useState<{ value: string; onSave: (v: string) => void } | null>(null);
   const [cellMenu, setCellMenu] = useState<CellContextMenu | null>(null);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
@@ -38,7 +39,7 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
   const [copyFeedback, setCopyFeedback] = useState('');
   const [menuPos, setMenuPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
-  const editable = primaryKey !== null;
+  const editable = !readOnly && primaryKey !== null;
 
   const handleRowSelect = (index: number, e: React.MouseEvent) => {
     if (e.shiftKey && lastClickedRow !== null) {
@@ -348,7 +349,7 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
 
       {cellMenu && (
         <div ref={menuRef} className="context-menu" style={{ left: menuPos.left, top: menuPos.top }}>
-          {cellMenu.column.nullable && (
+          {!readOnly && cellMenu.column.nullable && (
             <div
               className="context-menu-item"
               onClick={() => { onCellSave(cellMenu.pkValue, cellMenu.column.name, null); setCellMenu(null); }}
@@ -356,12 +357,14 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
               Set NULL
             </div>
           )}
-          <div
-            className="context-menu-item"
-            onClick={() => { onCellSave(cellMenu.pkValue, cellMenu.column.name, cellMenu.column.defaultValue); setCellMenu(null); }}
-          >
-            Set Default{cellMenu.column.defaultValue !== null ? ` (${cellMenu.column.defaultValue})` : ''}
-          </div>
+          {!readOnly && (
+            <div
+              className="context-menu-item"
+              onClick={() => { onCellSave(cellMenu.pkValue, cellMenu.column.name, cellMenu.column.defaultValue); setCellMenu(null); }}
+            >
+              Set Default{cellMenu.column.defaultValue !== null ? ` (${cellMenu.column.defaultValue})` : ''}
+            </div>
+          )}
           <div
             className="context-menu-item"
             onClick={() => {

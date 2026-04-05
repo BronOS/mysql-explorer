@@ -10,11 +10,12 @@ import Pagination from './Pagination';
 interface Props {
   tab: TabInfo;
   isActive?: boolean;
+  readOnly?: boolean;
 }
 
 const PAGE_SIZE = 1000;
 
-export default function TableView({ tab, isActive }: Props) {
+export default function TableView({ tab, isActive, readOnly }: Props) {
   const ipc = useIpc();
   const { setStatus } = useAppContext();
   const [columns, setColumns] = useState<ColumnMeta[]>([]);
@@ -210,7 +211,8 @@ export default function TableView({ tab, isActive }: Props) {
         saveMode={saveMode}
         onSaveModeChange={(mode) => { setSaveMode(mode); setUiState('saveMode', mode); }}
         onRefresh={handleRefresh}
-        onAddRow={handleAddRow}
+        onAddRow={readOnly ? undefined : handleAddRow}
+        readOnly={readOnly}
       />
       {hasPending && (
         <div className="bulk-commit-bar">
@@ -239,6 +241,7 @@ export default function TableView({ tab, isActive }: Props) {
           onDuplicateRow={handleDuplicateRow}
           onDeleteRow={handleDeleteRow}
           onDeleteDraftRow={handleDeleteDraftRow}
+          readOnly={readOnly}
         />
       )}
       {!loading && totalCount > 0 && (

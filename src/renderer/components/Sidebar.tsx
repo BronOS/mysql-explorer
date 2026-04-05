@@ -423,12 +423,18 @@ export default function Sidebar({ width }: { width: number }) {
                         <span>{label} ({items.length})</span>
                       </div>
                       {isGroupExpanded && items.map(name => {
-                        const isObjActive = activeTab?.type === 'object' && activeTab.connectionId === conn.id && activeTab.database === db.name && activeTab.objectName === name && activeTab.objectType === objType;
+                        const isViewData = objType === 'view';
+                        const isObjActive = isViewData
+                          ? activeTab?.type === 'table' && activeTab.connectionId === conn.id && activeTab.database === db.name && activeTab.table === name
+                          : activeTab?.type === 'object' && activeTab.connectionId === conn.id && activeTab.database === db.name && activeTab.objectName === name && activeTab.objectType === objType;
                         return (
                           <div key={name} className="tree-node-indent" ref={isObjActive ? activeNodeRef : undefined}>
                             <div
                               className={`tree-node ${isObjActive ? 'tree-node-active' : ''}`}
-                              onClick={() => openTab({ connectionId: conn.id, connectionName: conn.name, connectionColor: conn.color, type: 'object', database: db.name, objectType: objType as any, objectName: name })}
+                              onClick={() => isViewData
+                                ? openTab({ connectionId: conn.id, connectionName: conn.name, connectionColor: conn.color, type: 'table', database: db.name, table: name, objectType: 'view' })
+                                : openTab({ connectionId: conn.id, connectionName: conn.name, connectionColor: conn.color, type: 'object', database: db.name, objectType: objType as any, objectName: name })
+                              }
                               onContextMenu={(e) => {
                                 e.preventDefault();
                                 setObjectContextMenu({ x: e.clientX, y: e.clientY, conn, database: db.name, objectType: objType as any, objectName: name });
@@ -560,12 +566,19 @@ export default function Sidebar({ width }: { width: number }) {
       )}
 
       {objectContextMenu && (
-        <div className="context-menu" style={menuPosition(objectContextMenu.x, objectContextMenu.y, 70)}>
+        <div className="context-menu" style={menuPosition(objectContextMenu.x, objectContextMenu.y, objectContextMenu.objectType === 'view' ? 105 : 70)}>
+          {objectContextMenu.objectType === 'view' && (
+            <div className="context-menu-item" onClick={() => {
+              const { conn, database, objectName } = objectContextMenu;
+              openTab({ connectionId: conn.id, connectionName: conn.name, connectionColor: conn.color, type: 'table', database, table: objectName, objectType: 'view' });
+              setObjectContextMenu(null);
+            }}>Open Data</div>
+          )}
           <div className="context-menu-item" onClick={() => {
             const { conn, database, objectType, objectName } = objectContextMenu;
             openTab({ connectionId: conn.id, connectionName: conn.name, connectionColor: conn.color, type: 'object', database, objectType, objectName });
             setObjectContextMenu(null);
-          }}>Open</div>
+          }}>{objectContextMenu.objectType === 'view' ? 'View DDL' : 'Open'}</div>
           <div className="context-menu-item" style={{ color: '#ef4444' }} onClick={async () => {
             const { conn, database, objectType, objectName } = objectContextMenu;
             const typeSql = objectType.toUpperCase();

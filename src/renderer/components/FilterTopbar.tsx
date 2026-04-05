@@ -11,9 +11,10 @@ interface Props {
   onSaveModeChange: (mode: 'auto' | 'bulk') => void;
   onRefresh: () => void;
   onAddRow?: () => void;
+  readOnly?: boolean;
 }
 
-export default function FilterTopbar({ columns, onFilterChange, saveMode, onSaveModeChange, onRefresh, onAddRow }: Props) {
+export default function FilterTopbar({ columns, onFilterChange, saveMode, onSaveModeChange, onRefresh, onAddRow, readOnly }: Props) {
   const [mode, setMode] = useState<'structured' | 'raw'>('structured');
   const [filters, setFilters] = useState<FilterCondition[]>([]);
   const [rawWhere, setRawWhere] = useState('');
@@ -124,19 +125,24 @@ export default function FilterTopbar({ columns, onFilterChange, saveMode, onSave
       <div className="filter-right">
         {onAddRow && <button className="btn btn-secondary" onClick={onAddRow} title="Add new row">+ Row</button>}
         <button className="btn btn-secondary" onClick={onRefresh} title="Refresh">↻</button>
-        <span style={{ opacity: 0.6, fontSize: 11 }}>Save Mode:</span>
-        <span
-          className={`filter-mode-btn ${saveMode === 'auto' ? 'save-mode-active' : ''}`}
-          onClick={() => onSaveModeChange('auto')}
-        >
-          Auto-Save
-        </span>
-        <span
-          className={`filter-mode-btn ${saveMode === 'bulk' ? 'save-mode-active' : ''}`}
-          onClick={() => onSaveModeChange('bulk')}
-        >
-          Bulk Commit
-        </span>
+        {!readOnly && (
+          <>
+            <span style={{ opacity: 0.6, fontSize: 11 }}>Save Mode:</span>
+            <span
+              className={`filter-mode-btn ${saveMode === 'auto' ? 'save-mode-active' : ''}`}
+              onClick={() => onSaveModeChange('auto')}
+            >
+              Auto-Save
+            </span>
+            <span
+              className={`filter-mode-btn ${saveMode === 'bulk' ? 'save-mode-active' : ''}`}
+              onClick={() => onSaveModeChange('bulk')}
+            >
+              Bulk Commit
+            </span>
+          </>
+        )}
+        {readOnly && <span style={{ opacity: 0.5, fontSize: 11 }}>Read-only view</span>}
       </div>
     </div>
   );
