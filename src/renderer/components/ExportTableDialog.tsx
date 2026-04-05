@@ -15,6 +15,7 @@ const FORMAT_ORDER: ExportFormat[] = ['sql', 'csv', 'json', 'markdown', 'tsv', '
 export default function ExportTableDialog({ connectionId, database, table, onClose }: Props) {
   const ipc = useIpc();
   const [format, setFormat] = useState<ExportFormat>('sql');
+  const [folder, setFolder] = useState('');
   const [fileName, setFileName] = useState(`${database}.${table}.sql`);
   const [includeCreateTable, setIncludeCreateTable] = useState(true);
   const [ifNotExists, setIfNotExists] = useState(true);
@@ -75,10 +76,13 @@ export default function ExportTableDialog({ connectionId, database, table, onClo
     setExporting(true);
     setError('');
     try {
-      const filePath = await ipc.exportPickSaveFile(fileName, FORMAT_EXT[format]);
-      if (!filePath) {
-        setExporting(false);
-        return;
+      let filePath: string;
+      if (folder) {
+        filePath = `${folder}/${fileName}`;
+      } else {
+        const picked = await ipc.exportPickSaveFile(fileName, FORMAT_EXT[format]);
+        if (!picked) { setExporting(false); return; }
+        filePath = picked;
       }
 
       const colNames = columns.filter(c => selectedCols.has(c.name)).map(c => c.name);
@@ -150,16 +154,31 @@ export default function ExportTableDialog({ connectionId, database, table, onClo
           </div>
         </div>
 
-        {/* File name */}
-        <label style={{ display: 'block', marginBottom: 14 }}>
-          <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>File Name</div>
+        {/* Folder + file name */}
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Destination</div>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6 }}>
+            <input
+              className="input"
+              value={folder}
+              onChange={e => setFolder(e.target.value)}
+              placeholder="Select folder..."
+              style={{ flex: 1 }}
+              readOnly
+            />
+            <button className="btn btn-secondary" onClick={async () => {
+              const picked = await ipc.exportPickFolder();
+              if (picked) setFolder(picked);
+            }}>Browse</button>
+          </div>
           <input
             className="input"
             value={fileName}
             onChange={e => setFileName(e.target.value)}
+            placeholder="File name"
             style={{ width: '100%', boxSizing: 'border-box' }}
           />
-        </label>
+        </div>
 
         {/* SQL options */}
         {format === 'sql' && (

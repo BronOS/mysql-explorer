@@ -22,6 +22,16 @@ const electronAPI = {
   schemaDropTable: (connectionId: string, database: string, table: string) => ipcRenderer.invoke('schema:drop-table', connectionId, database, table),
   schemaDropDatabase: (connectionId: string, name: string) => ipcRenderer.invoke('schema:drop-database', connectionId, name),
   schemaCreateDatabase: (connectionId: string, name: string, charset: string, collation: string) => ipcRenderer.invoke('schema:create-database', connectionId, name, charset, collation),
+  schemaViews: (connectionId: string, database: string) => ipcRenderer.invoke('schema:views', connectionId, database),
+  schemaCreateView: (connectionId: string, database: string, view: string) => ipcRenderer.invoke('schema:create-view', connectionId, database, view),
+  schemaProcedures: (connectionId: string, database: string) => ipcRenderer.invoke('schema:procedures', connectionId, database),
+  schemaCreateProcedure: (connectionId: string, database: string, name: string) => ipcRenderer.invoke('schema:create-procedure', connectionId, database, name),
+  schemaFunctions: (connectionId: string, database: string) => ipcRenderer.invoke('schema:functions', connectionId, database),
+  schemaCreateFunction: (connectionId: string, database: string, name: string) => ipcRenderer.invoke('schema:create-function', connectionId, database, name),
+  schemaTriggers: (connectionId: string, database: string) => ipcRenderer.invoke('schema:triggers', connectionId, database),
+  schemaCreateTrigger: (connectionId: string, database: string, name: string) => ipcRenderer.invoke('schema:create-trigger', connectionId, database, name),
+  schemaEvents: (connectionId: string, database: string) => ipcRenderer.invoke('schema:events', connectionId, database),
+  schemaCreateEvent: (connectionId: string, database: string, name: string) => ipcRenderer.invoke('schema:create-event', connectionId, database, name),
 
   // Query
   queryUseDatabase: (connectionId: string, database: string) => ipcRenderer.invoke('query:use-database', connectionId, database),
@@ -45,6 +55,7 @@ const electronAPI = {
   schemaCacheSave: (cache: any) => ipcRenderer.invoke('schema:cache-save', cache),
 
   // Export
+  exportPickFolder: () => ipcRenderer.invoke('export:pick-folder'),
   exportPickSaveFile: (defaultName: string, ext: string) => ipcRenderer.invoke('export:pick-save-file', defaultName, ext),
   exportWriteFile: (filePath: string, content: string) => ipcRenderer.invoke('export:write-file', filePath, content),
   exportFetchAllRows: (connectionId: string, database: string, table: string, columns?: string[]) =>

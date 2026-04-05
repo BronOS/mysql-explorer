@@ -95,6 +95,48 @@ export function registerIpcHandlers(
     return schemaBrowser.createDatabase(pool, name, charset, collation);
   });
 
+  // Schema objects (views, procedures, functions, triggers, events)
+  ipcMain.handle('schema:views', async (_, connectionId, database) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    return schemaBrowser.listViews(pool, database);
+  });
+  ipcMain.handle('schema:create-view', async (_, connectionId, database, view) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    return schemaBrowser.createViewDDL(pool, database, view);
+  });
+  ipcMain.handle('schema:procedures', async (_, connectionId, database) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    return schemaBrowser.listProcedures(pool, database);
+  });
+  ipcMain.handle('schema:create-procedure', async (_, connectionId, database, name) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    return schemaBrowser.createProcedureDDL(pool, database, name);
+  });
+  ipcMain.handle('schema:functions', async (_, connectionId, database) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    return schemaBrowser.listFunctions(pool, database);
+  });
+  ipcMain.handle('schema:create-function', async (_, connectionId, database, name) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    return schemaBrowser.createFunctionDDL(pool, database, name);
+  });
+  ipcMain.handle('schema:triggers', async (_, connectionId, database) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    return schemaBrowser.listTriggers(pool, database);
+  });
+  ipcMain.handle('schema:create-trigger', async (_, connectionId, database, name) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    return schemaBrowser.createTriggerDDL(pool, database, name);
+  });
+  ipcMain.handle('schema:events', async (_, connectionId, database) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    return schemaBrowser.listEvents(pool, database);
+  });
+  ipcMain.handle('schema:create-event', async (_, connectionId, database, name) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    return schemaBrowser.createEventDDL(pool, database, name);
+  });
+
   // Query
   ipcMain.handle('query:use-database', async (_, connectionId, database) => {
     const pool = await connectionManager.ensureConnected(connectionId);
@@ -140,6 +182,16 @@ export function registerIpcHandlers(
   ipcMain.handle('schema:cache-save', (_, cache) => fileManager.saveSchemaCache(cache));
 
   // Export
+  ipcMain.handle('export:pick-folder', async () => {
+    const win = BrowserWindow.getFocusedWindow();
+    const result = await dialog.showOpenDialog(win!, {
+      title: 'Select Export Folder',
+      properties: ['openDirectory'],
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
+    return result.filePaths[0];
+  });
+
   ipcMain.handle('export:pick-save-file', async (_, defaultName: string, ext: string) => {
     const win = BrowserWindow.getFocusedWindow();
     const filters: Record<string, { name: string; extensions: string[] }> = {

@@ -96,6 +96,66 @@ export class SchemaBrowser {
     await pool.query(`DROP DATABASE \`${name}\``);
   }
 
+  async listViews(pool: Pool, database: string): Promise<string[]> {
+    const [rows] = await pool.query(
+      `SELECT TABLE_NAME FROM information_schema.VIEWS WHERE TABLE_SCHEMA = ?`, [database]
+    );
+    return (rows as any[]).map(r => r.TABLE_NAME);
+  }
+
+  async createViewDDL(pool: Pool, database: string, view: string): Promise<string> {
+    const [rows] = await pool.query(`SHOW CREATE VIEW \`${database}\`.\`${view}\``);
+    return (rows as any[])[0]?.['Create View'] || '';
+  }
+
+  async listProcedures(pool: Pool, database: string): Promise<string[]> {
+    const [rows] = await pool.query(
+      `SELECT ROUTINE_NAME FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = ? AND ROUTINE_TYPE = 'PROCEDURE'`, [database]
+    );
+    return (rows as any[]).map(r => r.ROUTINE_NAME);
+  }
+
+  async createProcedureDDL(pool: Pool, database: string, name: string): Promise<string> {
+    const [rows] = await pool.query(`SHOW CREATE PROCEDURE \`${database}\`.\`${name}\``);
+    return (rows as any[])[0]?.['Create Procedure'] || '';
+  }
+
+  async listFunctions(pool: Pool, database: string): Promise<string[]> {
+    const [rows] = await pool.query(
+      `SELECT ROUTINE_NAME FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = ? AND ROUTINE_TYPE = 'FUNCTION'`, [database]
+    );
+    return (rows as any[]).map(r => r.ROUTINE_NAME);
+  }
+
+  async createFunctionDDL(pool: Pool, database: string, name: string): Promise<string> {
+    const [rows] = await pool.query(`SHOW CREATE FUNCTION \`${database}\`.\`${name}\``);
+    return (rows as any[])[0]?.['Create Function'] || '';
+  }
+
+  async listTriggers(pool: Pool, database: string): Promise<string[]> {
+    const [rows] = await pool.query(
+      `SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = ?`, [database]
+    );
+    return (rows as any[]).map(r => r.TRIGGER_NAME);
+  }
+
+  async createTriggerDDL(pool: Pool, database: string, name: string): Promise<string> {
+    const [rows] = await pool.query(`SHOW CREATE TRIGGER \`${database}\`.\`${name}\``);
+    return (rows as any[])[0]?.['SQL Original Statement'] || '';
+  }
+
+  async listEvents(pool: Pool, database: string): Promise<string[]> {
+    const [rows] = await pool.query(
+      `SELECT EVENT_NAME FROM information_schema.EVENTS WHERE EVENT_SCHEMA = ?`, [database]
+    );
+    return (rows as any[]).map(r => r.EVENT_NAME);
+  }
+
+  async createEventDDL(pool: Pool, database: string, name: string): Promise<string> {
+    const [rows] = await pool.query(`SHOW CREATE EVENT \`${database}\`.\`${name}\``);
+    return (rows as any[])[0]?.['Create Event'] || '';
+  }
+
   async createDatabase(pool: Pool, name: string, charset: string, collation: string): Promise<void> {
     let sql = `CREATE DATABASE \`${name}\` DEFAULT CHARACTER SET ${charset}`;
     if (collation) sql += ` COLLATE ${collation}`;
