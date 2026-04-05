@@ -335,8 +335,8 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
         </table>
       </div>
 
-      {!editable && !readOnly && (
-        <div className="no-pk-notice">This table has no primary key. Editing is disabled.</div>
+      {!editable && (
+        <div className="no-pk-notice">{readOnly ? 'This is a read-only view.' : 'This table has no primary key. Editing is disabled.'}</div>
       )}
 
       {textModal && (
