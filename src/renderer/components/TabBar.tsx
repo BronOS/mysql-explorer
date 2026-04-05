@@ -58,7 +58,7 @@ export default function TabBar() {
             {tab.connectionName.slice(0, 4)}
           </span>
           <span className="tab-label">
-            {tab.type === 'console' ? '⌨️ SQL Console' : tab.type === 'schema' ? `🔧 Schema: ${tab.table}` : tab.type === 'object' ? `📝 ${tab.objectName || 'New ' + tab.objectType}` : `📋 ${tab.table}`}
+            {tab.type === 'console' ? '⌨️ SQL Console' : tab.type === 'schema' ? `🔧 Schema: ${tab.table}` : tab.type === 'object' ? `📝 ${tab.objectName || 'New ' + tab.objectType}` : tab.type === 'monitor' ? 'Server Monitor' : `📋 ${tab.table}`}
           </span>
         </div>
       ))}

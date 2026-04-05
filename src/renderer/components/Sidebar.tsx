@@ -325,6 +325,14 @@ export default function Sidebar({ width }: { width: number }) {
           type: 'console',
         });
         break;
+      case 'monitor':
+        openTab({
+          connectionId: conn.id,
+          connectionName: conn.name,
+          connectionColor: conn.color,
+          type: 'monitor',
+        });
+        break;
       case 'new-database':
         setShowCreateDatabase({ connectionId: conn.id });
         break;
@@ -467,8 +475,11 @@ export default function Sidebar({ width }: { width: number }) {
       )}
 
       {contextMenu && (
-        <div className="context-menu" style={menuPosition(contextMenu.x, contextMenu.y, expandedConns.has(contextMenu.connectionId) ? 200 : 130)}>
+        <div className="context-menu" style={menuPosition(contextMenu.x, contextMenu.y, expandedConns.has(contextMenu.connectionId) ? 235 : 130)}>
           <div className="context-menu-item" onClick={() => handleContextAction('console')}>Open SQL Console</div>
+          {expandedConns.has(contextMenu.connectionId) && (
+            <div className="context-menu-item" onClick={() => handleContextAction('monitor')}>Server Monitor</div>
+          )}
           {expandedConns.has(contextMenu.connectionId) && (
             <div className="context-menu-item" onClick={() => handleContextAction('new-database')}>New Database</div>
           )}
