@@ -226,6 +226,14 @@ export default function Sidebar({ width }: { width: number }) {
         dispatch({ type: 'SET_COLUMNS', connectionId, database: dbName, columns });
         await persistSchema(connectionId, [{ name: dbName, tables, columns }]);
       }).catch(() => {});
+
+      // Background prefetch schema object counts
+      for (const [objType, fetcher] of Object.entries(objectTypeIpcMap)) {
+        const plural = objectTypePluralMap[objType];
+        (ipc as any)[fetcher](connectionId, dbName).then((items: string[]) => {
+          dispatch({ type: 'SET_OBJECTS', connectionId, database: dbName, objectType: plural, items });
+        }).catch(() => {});
+      }
     } finally {
       setLoadingDbs(prev => { const s = new Set(prev); s.delete(key); return s; });
     }
