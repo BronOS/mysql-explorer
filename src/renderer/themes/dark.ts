@@ -1,0 +1,46 @@
+import { oneDark } from '@codemirror/theme-one-dark';
+import { ThemeDefinition } from './types';
+
+const dark: ThemeDefinition = {
+  id: 'dark',
+  name: 'Dark',
+  isDark: true,
+  colors: {
+    bgPrimary: '#2b2b2b',
+    bgSecondary: '#3c3f41',
+    bgInput: '#45494a',
+    bgHover: '#4b6eaf33',
+    textPrimary: '#a9b7c6',
+    textMuted: '#888',
+    textDisabled: '#666',
+    border: '#515151',
+    borderLight: '#393b3d',
+    accent: '#4b6eaf',
+    accentHover: '#5a7dbf',
+    accentBg: '#214283',
+    danger: '#ef4444',
+    dangerBg: '#2a0000',
+    dangerText: '#c75450',
+    success: '#4ade80',
+    successBg: '#002a00',
+    warning: '#f59e0b',
+    warningBg: '#2a2000',
+    scrollbar: '#555',
+    scrollbarHover: '#777',
+    treeActive: '#214283',
+    rowEven: '#2d2f30',
+    rowHover: '#3a3a3a',
+    rowSelected: '#214283',
+    cellModified: '#2d3b2d',
+    cellModifiedText: '#a5c261',
+    rowNumBg: '#333536',
+    tabActiveBg: '#2b2b2b',
+    noPkBg: '#3b3324',
+    noPkText: '#cc7832',
+    draftBorder: '#a5c261',
+    affectedCount: '#cc7832',
+  },
+  codemirrorTheme: () => oneDark,
+};
+
+export default dark;
