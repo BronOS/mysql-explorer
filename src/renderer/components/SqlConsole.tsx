@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import CodeMirror, { ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { sql, MySQL } from '@codemirror/lang-sql';
-import { oneDark } from '@codemirror/theme-one-dark';
 import { keymap, Decoration, DecorationSet, EditorView } from '@codemirror/view';
 import { Prec, StateField, StateEffect, EditorState } from '@codemirror/state';
 import { autocompletion, CompletionContext, CompletionResult, Completion, startCompletion, completionStatus } from '@codemirror/autocomplete';
 import { format as formatSql } from 'sql-formatter';
+import { useTheme } from '../hooks/use-theme';
 import { useIpc } from '../hooks/use-ipc';
 import { getUiState, setUiState, loadUiStateAsync } from '../hooks/use-ui-state';
 import { useDebounce } from '../hooks/use-debounce';
@@ -198,6 +198,7 @@ function insertSnippetWithPlaceholders(view: EditorView, body: string, from: num
 }
 
 export default function SqlConsole({ tab, isActive }: Props) {
+  const { cmExtension } = useTheme();
   const ipc = useIpc();
   const { setStatus } = useAppContext();
   const { schema, dispatch } = useAppContext();
@@ -626,7 +627,7 @@ export default function SqlConsole({ tab, isActive }: Props) {
             value={code}
             onChange={handleCodeChange}
             extensions={extensions}
-            theme={oneDark}
+            theme={cmExtension}
             height={`${dividerY - 42}px`}
             basicSetup={{ lineNumbers: true, foldGutter: true, autocompletion: true }}
           />
@@ -654,9 +655,9 @@ export default function SqlConsole({ tab, isActive }: Props) {
         {result && !result.error && result.type === 'rows' && (
           <>
             <div className="sql-result-header">
-              <span style={{ color: '#4ade80' }}>✓ {totalResultCount.toLocaleString()} rows returned</span>
-              <span style={{ color: '#555', marginLeft: 12 }}>in {(result.executionTimeMs / 1000).toFixed(3)}s</span>
-              <span style={{ marginLeft: 'auto', color: '#555' }}>Read-only result</span>
+              <span style={{ color: 'var(--success)' }}>✓ {totalResultCount.toLocaleString()} rows returned</span>
+              <span style={{ color: 'var(--text-disabled)', marginLeft: 12 }}>in {(result.executionTimeMs / 1000).toFixed(3)}s</span>
+              <span style={{ marginLeft: 'auto', color: 'var(--text-disabled)' }}>Read-only result</span>
             </div>
             <ResultTable columns={resultColumns} rows={pagedRows} />
             {totalResultCount > PAGE_SIZE && (

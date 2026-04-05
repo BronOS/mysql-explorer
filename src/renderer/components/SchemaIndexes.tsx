@@ -127,7 +127,7 @@ export default function SchemaIndexes({ connectionId, database, table, columnInf
 
       <div className="datagrid-wrapper">
         {loading ? (
-          <div style={{ padding: 16, color: '#888' }}>Loading indexes...</div>
+          <div style={{ padding: 16, color: 'var(--text-muted)' }}>Loading indexes...</div>
         ) : (
           <table className="datagrid">
             <thead>
@@ -142,7 +142,7 @@ export default function SchemaIndexes({ connectionId, database, table, columnInf
             <tbody>
               {indexes.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ padding: '12px 16px', color: '#666', textAlign: 'center' }}>No indexes</td>
+                  <td colSpan={5} style={{ padding: '12px 16px', color: 'var(--text-disabled)', textAlign: 'center' }}>No indexes</td>
                 </tr>
               ) : (
                 indexes.map(idx => (

@@ -59,11 +59,11 @@ export default function ConnectionDialog({ connection, onClose, onSaved }: Props
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
           <label>
-            <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Name</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Name</div>
             <input className="input" placeholder="e.g. Production, Dev11" value={form.name} onChange={e => set('name', e.target.value)} />
           </label>
           <label>
-            <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Color</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Color</div>
             <div style={{ display: 'flex', gap: 4 }}>
               {COLORS.map(c => (
                 <div
@@ -81,28 +81,28 @@ export default function ConnectionDialog({ connection, onClose, onSaved }: Props
 
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12, marginBottom: 12 }}>
           <label>
-            <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Host</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Host</div>
             <input className="input" value={form.host} onChange={e => set('host', e.target.value)} />
           </label>
           <label>
-            <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Port</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Port</div>
             <input className="input" type="number" value={form.port} onChange={e => set('port', Number(e.target.value))} />
           </label>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
           <label>
-            <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>User</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>User</div>
             <input className="input" value={form.user} onChange={e => set('user', e.target.value)} />
           </label>
           <label>
-            <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Password</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Password</div>
             <input className="input" type="password" value={form.password} onChange={e => set('password', e.target.value)} />
           </label>
         </div>
 
         <label style={{ marginBottom: 16, display: 'block' }}>
-          <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Default Database (optional)</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Default Database (optional)</div>
           <input className="input" value={form.defaultDatabase} onChange={e => set('defaultDatabase', e.target.value)} />
         </label>
 
@@ -115,16 +115,16 @@ export default function ConnectionDialog({ connection, onClose, onSaved }: Props
           <>
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12, marginBottom: 12 }}>
               <label>
-                <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>SSH Host</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>SSH Host</div>
                 <input className="input" value={form.sshHost} onChange={e => set('sshHost', e.target.value)} />
               </label>
               <label>
-                <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>SSH Port</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>SSH Port</div>
                 <input className="input" type="number" value={form.sshPort} onChange={e => set('sshPort', Number(e.target.value))} />
               </label>
             </div>
             <label style={{ marginBottom: 12, display: 'block' }}>
-              <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>SSH User</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>SSH User</div>
               <input className="input" value={form.sshUser} onChange={e => set('sshUser', e.target.value)} />
             </label>
             <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
@@ -139,17 +139,17 @@ export default function ConnectionDialog({ connection, onClose, onSaved }: Props
             </div>
             {form.sshAuthType === 'password' ? (
               <label style={{ marginBottom: 12, display: 'block' }}>
-                <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>SSH Password</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>SSH Password</div>
                 <input className="input" type="password" value={form.sshPassword} onChange={e => set('sshPassword', e.target.value)} />
               </label>
             ) : (
               <>
                 <label style={{ marginBottom: 12, display: 'block' }}>
-                  <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Key File Path</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Key File Path</div>
                   <input className="input" value={form.sshKeyPath} onChange={e => set('sshKeyPath', e.target.value)} />
                 </label>
                 <label style={{ marginBottom: 12, display: 'block' }}>
-                  <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Passphrase (optional)</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Passphrase (optional)</div>
                   <input className="input" type="password" value={form.sshPassphrase} onChange={e => set('sshPassphrase', e.target.value)} />
                 </label>
               </>
@@ -158,7 +158,7 @@ export default function ConnectionDialog({ connection, onClose, onSaved }: Props
         )}
 
         {testResult && (
-          <div style={{ padding: 8, borderRadius: 4, marginBottom: 12, fontSize: 12, background: testResult.success ? '#002a00' : '#2a0000', color: testResult.success ? '#4ade80' : '#ef4444' }}>
+          <div style={{ padding: 8, borderRadius: 4, marginBottom: 12, fontSize: 12, background: testResult.success ? 'var(--success-bg)' : 'var(--danger-bg)', color: testResult.success ? 'var(--success)' : 'var(--danger)' }}>
             {testResult.success ? '✓ Connection successful' : `✗ ${testResult.error}`}
           </div>
         )}

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAppContext } from './context/app-context';
 import { getUiState, setUiState, loadUiStateAsync } from './hooks/use-ui-state';
+import { useTheme } from './hooks/use-theme';
+import { applyThemeColors } from './themes';
 import Sidebar from './components/Sidebar';
 import TabBar from './components/TabBar';
 import TableView from './components/TableView';
@@ -10,10 +12,19 @@ import SchemaObjectTab from './components/SchemaObjectTab';
 
 function StatusBar() {
   const { status, tabs, activeTabId, connections } = useAppContext();
+  const { themeId, setTheme, allThemes } = useTheme();
+  const [showThemeMenu, setShowThemeMenu] = useState(false);
+
+  useEffect(() => {
+    if (!showThemeMenu) return;
+    const handler = () => setShowThemeMenu(false);
+    setTimeout(() => window.addEventListener('click', handler), 0);
+    return () => window.removeEventListener('click', handler);
+  }, [showThemeMenu]);
   const activeTab = tabs.find(t => t.id === activeTabId);
   const conn = activeTab ? connections.find(c => c.id === activeTab.connectionId) : null;
 
-  const statusColor = status?.type === 'error' ? '#ef4444' : status?.type === 'success' ? '#4ade80' : '#888';
+  const statusColor = status?.type === 'error' ? 'var(--danger)' : status?.type === 'success' ? 'var(--success)' : 'var(--text-muted)';
 
   return (
     <div className="status-bar">
@@ -26,7 +37,39 @@ function StatusBar() {
       <span className="status-center" style={{ color: statusColor }}>
         {status?.text || ''}
       </span>
-      <span className="status-right">
+      <span className="status-right" style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
+        <span style={{ position: 'relative' }}>
+          <span
+            style={{ cursor: 'pointer', padding: '2px 8px', borderRadius: 3, background: 'var(--bg-input)', fontSize: 11 }}
+            onClick={() => setShowThemeMenu(!showThemeMenu)}
+          >
+            {allThemes.find(t => t.id === themeId)?.name || 'Dark'}
+          </span>
+          {showThemeMenu && (
+            <div style={{
+              position: 'absolute', bottom: '100%', right: 0, marginBottom: 4,
+              background: 'var(--bg-secondary)', border: '1px solid var(--border)',
+              borderRadius: 4, padding: '4px 0', minWidth: 180,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.5)', zIndex: 1000,
+            }}>
+              {allThemes.map(t => (
+                <div
+                  key={t.id}
+                  style={{
+                    padding: '6px 12px', cursor: 'pointer', fontSize: 12,
+                    background: t.id === themeId ? 'var(--accent)' : 'transparent',
+                    color: t.id === themeId ? '#fff' : 'var(--text-primary)',
+                  }}
+                  onClick={() => { setTheme(t.id); setShowThemeMenu(false); }}
+                  onMouseEnter={e => { if (t.id !== themeId) (e.target as HTMLElement).style.background = 'var(--bg-hover)'; }}
+                  onMouseLeave={e => { if (t.id !== themeId) (e.target as HTMLElement).style.background = 'transparent'; }}
+                >
+                  {t.name}
+                </div>
+              ))}
+            </div>
+          )}
+        </span>
         {tabs.length > 0 && <span>{tabs.length} tab{tabs.length !== 1 ? 's' : ''}</span>}
       </span>
     </div>
@@ -38,6 +81,11 @@ export default function App() {
   const activeTab = tabs.find(t => t.id === activeTabId);
   const [sidebarWidth, setSidebarWidth] = useState(240);
   const dragging = useRef(false);
+  const { theme } = useTheme();
+
+  useEffect(() => {
+    applyThemeColors(theme.colors);
+  }, []);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {

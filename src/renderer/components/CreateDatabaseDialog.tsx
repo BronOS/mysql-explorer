@@ -51,19 +51,19 @@ export default function CreateDatabaseDialog({ connectionId, onCreated, onClose 
         <div className="modal-title">New Database</div>
 
         <label style={{ display: 'block', marginBottom: 12 }}>
-          <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Database Name</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Database Name</div>
           <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. my_database" autoFocus />
         </label>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
           <label>
-            <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Charset</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Charset</div>
             <select className="select" style={{ width: '100%' }} value={charset} onChange={e => handleCharsetChange(e.target.value)}>
               {CHARSETS.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </label>
           <label>
-            <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Collation</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Collation</div>
             <select className="select" style={{ width: '100%' }} value={collation} onChange={e => setCollation(e.target.value)}>
               {(COLLATIONS[charset] || []).map(c => <option key={c} value={c}>{c}</option>)}
             </select>
@@ -71,7 +71,7 @@ export default function CreateDatabaseDialog({ connectionId, onCreated, onClose 
         </div>
 
         {error && (
-          <div style={{ padding: 8, borderRadius: 4, marginBottom: 12, fontSize: 12, background: '#2a0000', color: '#c75450' }}>
+          <div style={{ padding: 8, borderRadius: 4, marginBottom: 12, fontSize: 12, background: 'var(--danger-bg)', color: 'var(--danger-text)' }}>
             {error}
           </div>
         )}

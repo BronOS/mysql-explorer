@@ -477,7 +477,7 @@ export default function Sidebar({ width }: { width: number }) {
           )}
           <div className="context-menu-item" onClick={() => handleContextAction('edit')}>Edit</div>
           <div className="context-menu-item" onClick={() => handleContextAction('disconnect')}>Disconnect</div>
-          <div className="context-menu-item" onClick={() => handleContextAction('delete')} style={{ color: '#ef4444' }}>Delete</div>
+          <div className="context-menu-item" onClick={() => handleContextAction('delete')} style={{ color: 'var(--danger)' }}>Delete</div>
         </div>
       )}
 
@@ -495,7 +495,7 @@ export default function Sidebar({ width }: { width: number }) {
             setShowExportTable({ connectionId: tableContextMenu.conn.id, database: tableContextMenu.database, table: tableContextMenu.table });
             setTableContextMenu(null);
           }}>Export Table</div>
-          <div className="context-menu-item" style={{ color: '#ef4444' }} onClick={async () => {
+          <div className="context-menu-item" style={{ color: 'var(--danger)' }} onClick={async () => {
             const { conn, database, table } = tableContextMenu;
             setTableContextMenu(null);
             if (!confirm(`Drop table \`${table}\`? This cannot be undone.`)) return;
@@ -529,7 +529,7 @@ export default function Sidebar({ width }: { width: number }) {
             setShowExportDb({ connectionId: dbContextMenu.conn.id, database: dbContextMenu.database });
             setDbContextMenu(null);
           }}>Export Database</div>
-          <div className="context-menu-item" style={{ color: '#ef4444' }} onClick={async () => {
+          <div className="context-menu-item" style={{ color: 'var(--danger)' }} onClick={async () => {
             const { conn, database } = dbContextMenu;
             setDbContextMenu(null);
             if (!confirm(`Drop database \`${database}\`? All tables will be permanently deleted. This cannot be undone.`)) return;
@@ -580,7 +580,7 @@ export default function Sidebar({ width }: { width: number }) {
             openTab({ connectionId: conn.id, connectionName: conn.name, connectionColor: conn.color, type: 'object', database, objectType, objectName });
             setObjectContextMenu(null);
           }}>{objectContextMenu.objectType === 'view' ? 'View DDL' : 'Open'}</div>
-          <div className="context-menu-item" style={{ color: '#ef4444' }} onClick={async () => {
+          <div className="context-menu-item" style={{ color: 'var(--danger)' }} onClick={async () => {
             const { conn, database, objectType, objectName } = objectContextMenu;
             const typeSql = objectType.toUpperCase();
             setObjectContextMenu(null);

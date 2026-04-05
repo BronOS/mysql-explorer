@@ -507,7 +507,7 @@ export default function SchemaColumns({ connectionId, database, table, isActive,
 
       <div className="datagrid-wrapper">
         {loading ? (
-          <div style={{ padding: 16, color: '#888' }}>Loading columns...</div>
+          <div style={{ padding: 16, color: 'var(--text-muted)' }}>Loading columns...</div>
         ) : (
           <table className="datagrid">
             <thead>

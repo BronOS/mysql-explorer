@@ -131,7 +131,7 @@ export default function ExportTableDialog({ connectionId, database, table, onClo
 
         {/* Format toggle buttons */}
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>Format</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>Format</div>
           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
             {FORMAT_ORDER.map(f => (
               <button
@@ -143,9 +143,9 @@ export default function ExportTableDialog({ connectionId, database, table, onClo
                   borderRadius: 4,
                   border: '1px solid',
                   cursor: 'pointer',
-                  borderColor: format === f ? '#4b6eaf' : '#515151',
-                  background: format === f ? '#4b6eaf' : 'transparent',
-                  color: format === f ? '#fff' : '#ccc',
+                  borderColor: format === f ? 'var(--accent)' : 'var(--border)',
+                  background: format === f ? 'var(--accent)' : 'transparent',
+                  color: format === f ? '#fff' : 'var(--text-primary)',
                 }}
               >
                 {FORMAT_LABELS[f]}
@@ -156,7 +156,7 @@ export default function ExportTableDialog({ connectionId, database, table, onClo
 
         {/* Folder + file name */}
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Destination</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Destination</div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6 }}>
             <input
               className="input"
@@ -198,7 +198,7 @@ export default function ExportTableDialog({ connectionId, database, table, onClo
                   checked={ifNotExists}
                   onChange={e => setIfNotExists(e.target.checked)}
                 />
-                <span style={{ fontSize: 13, color: '#bbb' }}>IF NOT EXISTS</span>
+                <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>IF NOT EXISTS</span>
               </label>
             )}
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
@@ -216,13 +216,13 @@ export default function ExportTableDialog({ connectionId, database, table, onClo
         {!loading && columns.length > 0 && (
           <div style={{ marginBottom: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-              <div style={{ fontSize: 11, color: '#888' }}>Fields</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Fields</div>
               <button
                 onClick={handleSelectAll}
                 disabled={colListDisabled}
                 style={{
                   fontSize: 11,
-                  color: colListDisabled ? '#555' : '#4b6eaf',
+                  color: colListDisabled ? 'var(--text-disabled)' : 'var(--accent)',
                   background: 'none',
                   border: 'none',
                   cursor: colListDisabled ? 'default' : 'pointer',
@@ -235,7 +235,7 @@ export default function ExportTableDialog({ connectionId, database, table, onClo
             <div style={{
               maxHeight: 180,
               overflowY: 'auto',
-              border: '1px solid #515151',
+              border: '1px solid var(--border)',
               borderRadius: 4,
               padding: '6px 8px',
               display: 'flex',
@@ -260,7 +260,7 @@ export default function ExportTableDialog({ connectionId, database, table, onClo
                     onChange={() => toggleCol(col.name)}
                   />
                   <span style={{ fontSize: 12 }}>{col.name}</span>
-                  <span style={{ fontSize: 11, color: '#666' }}>{col.type}</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>{col.type}</span>
                 </label>
               ))}
             </div>
@@ -268,7 +268,7 @@ export default function ExportTableDialog({ connectionId, database, table, onClo
         )}
 
         {error && (
-          <div style={{ padding: 8, borderRadius: 4, marginBottom: 12, fontSize: 12, background: '#2a0000', color: '#c75450' }}>
+          <div style={{ padding: 8, borderRadius: 4, marginBottom: 12, fontSize: 12, background: 'var(--danger-bg)', color: 'var(--danger-text)' }}>
             {error}
           </div>
         )}

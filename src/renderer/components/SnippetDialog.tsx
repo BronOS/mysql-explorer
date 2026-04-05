@@ -63,17 +63,17 @@ export default function SnippetDialog({ onClose, onInsert }: Props) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <label>
-                <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Name</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Name</div>
                 <input className="input" value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} placeholder="e.g. Find slow queries" autoFocus />
               </label>
               <label>
-                <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Prefix (for autocomplete with @)</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Prefix (for autocomplete with @)</div>
                 <input className="input" value={editing.prefix} onChange={e => setEditing({ ...editing, prefix: e.target.value })} placeholder="e.g. slow-queries" />
               </label>
             </div>
             <label>
-              <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>
-                SQL Body <span style={{ color: '#666' }}>— use {'{{placeholder}}'} for variables</span>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>
+                SQL Body <span style={{ color: 'var(--text-disabled)' }}>— use {'{{placeholder}}'} for variables</span>
               </div>
               <textarea
                 className="input"
@@ -85,7 +85,7 @@ export default function SnippetDialog({ onClose, onInsert }: Props) {
               />
             </label>
             {editing.body && /\{\{.+?\}\}/.test(editing.body) && (
-              <div style={{ fontSize: 11, color: '#888' }}>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                 Placeholders: {[...editing.body.matchAll(/\{\{(.+?)\}\}/g)].map(m => m[1]).filter((v, i, a) => a.indexOf(v) === i).join(', ')}
               </div>
             )}
@@ -108,7 +108,7 @@ export default function SnippetDialog({ onClose, onInsert }: Props) {
             />
             <div style={{ overflowY: 'auto', maxHeight: '50vh' }}>
               {filtered.length === 0 && (
-                <div style={{ color: '#666', fontSize: 12, padding: '16px 0', textAlign: 'center' }}>
+                <div style={{ color: 'var(--text-disabled)', fontSize: 12, padding: '16px 0', textAlign: 'center' }}>
                   {snippets.length === 0 ? 'No snippets yet. Create one to get started.' : 'No matching snippets.'}
                 </div>
               )}
@@ -117,7 +117,7 @@ export default function SnippetDialog({ onClose, onInsert }: Props) {
                   key={s.id}
                   style={{
                     padding: '8px 10px',
-                    borderBottom: '1px solid #3c3f41',
+                    borderBottom: '1px solid var(--bg-secondary)',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'flex-start',
@@ -127,15 +127,15 @@ export default function SnippetDialog({ onClose, onInsert }: Props) {
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 500 }}>{s.name}</div>
-                    {s.prefix && <div style={{ fontSize: 11, color: '#888' }}>@{s.prefix}</div>}
-                    <div style={{ fontSize: 11, color: '#666', fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>
+                    {s.prefix && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>@{s.prefix}</div>}
+                    <div style={{ fontSize: 11, color: 'var(--text-disabled)', fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>
                       {s.body.replace(/\n/g, ' ').slice(0, 80)}
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
                     <button className="btn btn-primary" style={{ fontSize: 11, padding: '2px 8px' }} onClick={(e) => { e.stopPropagation(); onInsert(s.body); }}>Insert</button>
                     <button className="btn btn-secondary" style={{ fontSize: 11, padding: '2px 8px' }} onClick={(e) => { e.stopPropagation(); setEditing({ ...s }); }}>Edit</button>
-                    <button className="btn btn-secondary" style={{ fontSize: 11, padding: '2px 8px', color: '#ef4444' }} onClick={(e) => { e.stopPropagation(); handleDelete(s.id); }}>Delete</button>
+                    <button className="btn btn-secondary" style={{ fontSize: 11, padding: '2px 8px', color: 'var(--danger)' }} onClick={(e) => { e.stopPropagation(); handleDelete(s.id); }}>Delete</button>
                   </div>
                 </div>
               ))}

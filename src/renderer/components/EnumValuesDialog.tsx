@@ -39,7 +39,7 @@ export default function EnumValuesDialog({ initial, onSave, onClose }: Props) {
         <div style={{ maxHeight: 300, overflow: 'auto', marginBottom: 12 }}>
           {values.map((val, idx) => (
             <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-              <span style={{ color: '#666', fontSize: 11, width: 20, textAlign: 'right' }}>{idx + 1}.</span>
+              <span style={{ color: 'var(--text-disabled)', fontSize: 11, width: 20, textAlign: 'right' }}>{idx + 1}.</span>
               <input
                 className="input"
                 style={{ flex: 1, padding: '4px 8px', fontSize: 12 }}
@@ -58,7 +58,7 @@ export default function EnumValuesDialog({ initial, onSave, onClose }: Props) {
                 onClick={() => moveValue(idx, 1)}
               >▼</span>
               <span
-                style={{ cursor: 'pointer', color: '#c75450', opacity: values.length > 1 ? 1 : 0.3, fontSize: 14 }}
+                style={{ cursor: 'pointer', color: 'var(--danger-text)', opacity: values.length > 1 ? 1 : 0.3, fontSize: 14 }}
                 onClick={() => removeValue(idx)}
               >✕</span>
             </div>
@@ -68,7 +68,7 @@ export default function EnumValuesDialog({ initial, onSave, onClose }: Props) {
         <button className="btn btn-secondary" onClick={addValue} style={{ marginBottom: 12 }}>+ Add Value</button>
 
         {preview && (
-          <div style={{ padding: 8, background: '#2b2b2b', borderRadius: 4, fontFamily: 'monospace', fontSize: 12, color: '#a5c261', marginBottom: 12, wordBreak: 'break-all' }}>
+          <div style={{ padding: 8, background: 'var(--bg-primary)', borderRadius: 4, fontFamily: 'monospace', fontSize: 12, color: '#a5c261', marginBottom: 12, wordBreak: 'break-all' }}>
             {preview}
           </div>
         )}

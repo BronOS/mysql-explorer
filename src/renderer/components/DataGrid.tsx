@@ -395,7 +395,7 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
           {cellMenu.isDraft && onDeleteDraftRow && (
             <div
               className="context-menu-item"
-              style={{ color: '#ef4444' }}
+              style={{ color: 'var(--danger)' }}
               onClick={() => { onDeleteDraftRow(cellMenu.pkValue as string); setCellMenu(null); }}
             >
               Remove Draft Row
@@ -404,7 +404,7 @@ export default function DataGrid({ columns, rows, draftRows = [], primaryKey, sa
           {!cellMenu.isDraft && primaryKey && onDeleteRow && (
             <div
               className="context-menu-item"
-              style={{ color: '#ef4444' }}
+              style={{ color: 'var(--danger)' }}
               onClick={() => {
                 const pkVal = cellMenu.rowOriginal[primaryKey!];
                 if (confirm(`Delete row where ${primaryKey} = ${pkVal}?`)) {

@@ -20,16 +20,16 @@ export default function PrecisionDialog({ initial, onSave, onClose }: Props) {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
           <label>
-            <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Precision (total digits)</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Precision (total digits)</div>
             <input className="input" type="number" min="1" max="65" value={precision} onChange={e => setPrecision(e.target.value)} autoFocus />
           </label>
           <label>
-            <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Scale (decimal places)</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Scale (decimal places)</div>
             <input className="input" type="number" min="0" max="30" value={scale} onChange={e => setScale(e.target.value)} />
           </label>
         </div>
 
-        <div style={{ padding: 8, background: '#2b2b2b', borderRadius: 4, fontFamily: 'monospace', fontSize: 12, color: '#6897bb', marginBottom: 16 }}>
+        <div style={{ padding: 8, background: 'var(--bg-primary)', borderRadius: 4, fontFamily: 'monospace', fontSize: 12, color: '#6897bb', marginBottom: 16 }}>
           DECIMAL({preview}) → e.g. {(() => {
             const p = parseInt(precision) || 10;
             const s = parseInt(scale) || 0;

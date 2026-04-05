@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { sql, MySQL } from '@codemirror/lang-sql';
-import { oneDark } from '@codemirror/theme-one-dark';
+import { useTheme } from '../hooks/use-theme';
 import { useIpc } from '../hooks/use-ipc';
 import { useAppContext } from '../context/app-context';
 import { TabInfo } from '../../shared/types';
@@ -54,6 +54,7 @@ async function fetchDdl(
 }
 
 export default function SchemaObjectTab({ tab, isActive }: Props) {
+  const { cmExtension } = useTheme();
   const ipc = useIpc();
   const { setStatus, dispatch, closeTab, openTab } = useAppContext();
 
@@ -183,7 +184,7 @@ export default function SchemaObjectTab({ tab, isActive }: Props) {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Toolbar */}
       <div className="sql-toolbar">
-        <span style={{ color: '#a9b7c6', fontWeight: 600, fontSize: 13 }}>{titleLabel}</span>
+        <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: 13 }}>{titleLabel}</span>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
           {!isEditMode && !loading && (
             <button className="btn btn-secondary" onClick={handleEdit}>
@@ -223,7 +224,7 @@ export default function SchemaObjectTab({ tab, isActive }: Props) {
               value={displayDdl}
               onChange={isEditMode ? setEditCode : undefined}
               extensions={extensions}
-              theme={oneDark}
+              theme={cmExtension}
               readOnly={!isEditMode}
               height="100%"
               basicSetup={{ lineNumbers: true, foldGutter: false, autocompletion: isEditMode }}
@@ -237,17 +238,17 @@ export default function SchemaObjectTab({ tab, isActive }: Props) {
         <div className="modal-overlay">
           <div className="modal" style={{ maxWidth: 680, width: '90%' }}>
             <div className="modal-title">Confirm DDL Execution</div>
-            <p style={{ fontSize: 12, color: '#888', marginBottom: 12 }}>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
               The following SQL will be executed:
             </p>
             <pre style={{
-              background: '#2b2b2b',
-              border: '1px solid #515151',
+              background: 'var(--bg-primary)',
+              border: '1px solid var(--border)',
               borderRadius: 4,
               padding: 12,
               fontSize: 12,
               fontFamily: "'SF Mono', 'Fira Code', monospace",
-              color: '#a9b7c6',
+              color: 'var(--text-primary)',
               maxHeight: 320,
               overflow: 'auto',
               whiteSpace: 'pre-wrap',

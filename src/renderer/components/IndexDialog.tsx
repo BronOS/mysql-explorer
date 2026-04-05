@@ -114,32 +114,32 @@ export default function IndexDialog({ columns, initial, onSave, onClose }: Props
         <div className="modal-title">{initial ? 'Edit Index' : 'Add Index'}</div>
 
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Index Name</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Index Name</div>
           <input className="input" placeholder="e.g. idx_email" value={name} onChange={e => handleNameChange(e.target.value)} />
         </div>
 
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Type</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Type</div>
           <select className="select" style={{ width: '100%' }} value={type} onChange={e => setType(e.target.value)}>
             {TYPE_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
 
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Columns</div>
-          <div style={{ border: '1px solid #646464', borderRadius: 3, background: '#45494a', maxHeight: 250, overflowY: 'auto' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Columns</div>
+          <div style={{ border: '1px solid #646464', borderRadius: 3, background: 'var(--bg-input)', maxHeight: 250, overflowY: 'auto' }}>
             {columns.map(colInfo => {
               const selCol = selectedCols.find(c => c.name === colInfo.name);
               const isSelected = !!selCol;
               const idx = selectedCols.findIndex(c => c.name === colInfo.name);
               const requiresPrefix = needsPrefix(colInfo.type);
               return (
-                <div key={colInfo.name} style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', borderBottom: '1px solid #515151', background: isSelected ? '#214283' : 'transparent', cursor: 'pointer', userSelect: 'none' }}>
+                <div key={colInfo.name} style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', borderBottom: '1px solid var(--border)', background: isSelected ? '#214283' : 'transparent', cursor: 'pointer', userSelect: 'none' }}>
                   <input type="checkbox" checked={isSelected} readOnly style={{ marginRight: 8, cursor: 'pointer' }} onClick={() => toggleColumn(colInfo)} />
                   <span style={{ flex: 1, fontSize: 12 }} onClick={() => toggleColumn(colInfo)}>
                     {colInfo.name}
                     <span style={{ color: '#6897bb', fontSize: 10, marginLeft: 6 }}>{colInfo.type}</span>
-                    {requiresPrefix && isSelected && !selCol?.prefixLength && <span style={{ color: '#cc7832', fontSize: 10, marginLeft: 4 }}>⚠ set max indexed length</span>}
+                    {requiresPrefix && isSelected && !selCol?.prefixLength && <span style={{ color: 'var(--affected-count)', fontSize: 10, marginLeft: 4 }}>⚠ set max indexed length</span>}
                   </span>
                   {isSelected && (
                     <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
@@ -166,8 +166,8 @@ export default function IndexDialog({ columns, initial, onSave, onClose }: Props
 
         {selectedCols.length > 0 && (
           <div style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Preview</div>
-            <div style={{ fontSize: 12, color: '#a9b7c6', padding: '4px 8px', background: '#2b2b2b', borderRadius: 3, fontFamily: 'monospace' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Preview</div>
+            <div style={{ fontSize: 12, color: 'var(--text-primary)', padding: '4px 8px', background: 'var(--bg-primary)', borderRadius: 3, fontFamily: 'monospace' }}>
               {colPreview}
             </div>
           </div>

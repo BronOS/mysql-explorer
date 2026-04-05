@@ -69,18 +69,18 @@ export default function ImportSqlDialog({ connectionId, database, onClose, onDon
             <button className="btn btn-primary" onClick={handlePickFile} style={{ fontSize: 13, padding: '8px 20px' }}>
               Choose SQL File...
             </button>
-            <div style={{ fontSize: 11, color: '#666', marginTop: 8 }}>Select a .sql file to import</div>
+            <div style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 8 }}>Select a .sql file to import</div>
           </div>
         )}
 
         {file && !importing && !done && (
           <>
-            <div style={{ padding: 12, background: '#2b2b2b', borderRadius: 4, marginBottom: 12 }}>
+            <div style={{ padding: 12, background: 'var(--bg-primary)', borderRadius: 4, marginBottom: 12 }}>
               <div style={{ fontSize: 13, fontWeight: 500 }}>{file.fileName}</div>
-              <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>{formatSize(file.size)}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{formatSize(file.size)}</div>
             </div>
             {file.size > 100 * 1024 * 1024 && (
-              <div style={{ padding: 8, borderRadius: 4, marginBottom: 12, fontSize: 12, background: '#2a2000', color: '#f59e0b' }}>
+              <div style={{ padding: 8, borderRadius: 4, marginBottom: 12, fontSize: 12, background: 'var(--warning-bg)', color: 'var(--warning)' }}>
                 Large file — import may take a while.
               </div>
             )}
@@ -95,17 +95,17 @@ export default function ImportSqlDialog({ connectionId, database, onClose, onDon
         {importing && (
           <div>
             <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>Importing {file?.fileName}...</div>
-              <div style={{ background: '#2b2b2b', borderRadius: 4, height: 6, overflow: 'hidden' }}>
-                <div style={{ background: '#4b6eaf', height: '100%', width: '100%', animation: 'import-pulse 1.5s ease-in-out infinite' }} />
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>Importing {file?.fileName}...</div>
+              <div style={{ background: 'var(--bg-primary)', borderRadius: 4, height: 6, overflow: 'hidden' }}>
+                <div style={{ background: 'var(--accent)', height: '100%', width: '100%', animation: 'import-pulse 1.5s ease-in-out infinite' }} />
               </div>
             </div>
             <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
-              <span style={{ color: '#4ade80' }}>{progress.executed.toLocaleString()} executed</span>
-              {progress.errors > 0 && <span style={{ color: '#ef4444' }}>{progress.errors.toLocaleString()} errors</span>}
+              <span style={{ color: 'var(--success)' }}>{progress.executed.toLocaleString()} executed</span>
+              {progress.errors > 0 && <span style={{ color: 'var(--danger)' }}>{progress.errors.toLocaleString()} errors</span>}
             </div>
             {progress.currentStatement && (
-              <div style={{ fontSize: 11, color: '#666', fontFamily: 'monospace', marginTop: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div style={{ fontSize: 11, color: 'var(--text-disabled)', fontFamily: 'monospace', marginTop: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {progress.currentStatement}
               </div>
             )}
@@ -114,17 +114,17 @@ export default function ImportSqlDialog({ connectionId, database, onClose, onDon
 
         {done && result && (
           <>
-            <div style={{ padding: 12, background: '#2b2b2b', borderRadius: 4, marginBottom: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 500, color: result.errors === 0 ? '#4ade80' : '#f59e0b' }}>
+            <div style={{ padding: 12, background: 'var(--bg-primary)', borderRadius: 4, marginBottom: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 500, color: result.errors === 0 ? 'var(--success)' : 'var(--warning)' }}>
                 Import complete
               </div>
               <div style={{ display: 'flex', gap: 16, fontSize: 12, marginTop: 6 }}>
-                <span style={{ color: '#4ade80' }}>{result.executed.toLocaleString()} statements executed</span>
+                <span style={{ color: 'var(--success)' }}>{result.executed.toLocaleString()} statements executed</span>
                 {result.errors > 0 && (
-                  <span style={{ color: '#ef4444' }}>
+                  <span style={{ color: 'var(--danger)' }}>
                     {result.errors.toLocaleString()} errors
                     <span
-                      style={{ color: '#888', cursor: 'pointer', marginLeft: 4, textDecoration: 'underline' }}
+                      style={{ color: 'var(--text-muted)', cursor: 'pointer', marginLeft: 4, textDecoration: 'underline' }}
                       onClick={() => setShowErrors(!showErrors)}
                     >
                       {showErrors ? 'hide' : 'show'}
@@ -134,7 +134,7 @@ export default function ImportSqlDialog({ connectionId, database, onClose, onDon
               </div>
             </div>
             {showErrors && result.errorMessages.length > 0 && (
-              <div style={{ maxHeight: 200, overflowY: 'auto', padding: 8, background: '#2a0000', borderRadius: 4, marginBottom: 12, fontSize: 11, fontFamily: 'monospace', color: '#c75450' }}>
+              <div style={{ maxHeight: 200, overflowY: 'auto', padding: 8, background: 'var(--danger-bg)', borderRadius: 4, marginBottom: 12, fontSize: 11, fontFamily: 'monospace', color: 'var(--danger-text)' }}>
                 {result.errorMessages.map((msg, i) => (
                   <div key={i} style={{ marginBottom: 6 }}>{msg}</div>
                 ))}

@@ -194,10 +194,10 @@ export default function ExportDatabaseDialog({ connectionId, database, onClose }
 
         {done ? (
           <>
-            <div style={{ padding: 12, background: '#2b2b2b', borderRadius: 4, marginBottom: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#4ade80' }}>Export complete</div>
+            <div style={{ padding: 12, background: 'var(--bg-primary)', borderRadius: 4, marginBottom: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--success)' }}>Export complete</div>
               {exportedPath && (
-                <div style={{ fontSize: 11, color: '#888', marginTop: 4, wordBreak: 'break-all' }}>{exportedPath}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, wordBreak: 'break-all' }}>{exportedPath}</div>
               )}
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -208,7 +208,7 @@ export default function ExportDatabaseDialog({ connectionId, database, onClose }
           <>
             {/* Folder + File Name */}
             <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 12, color: '#aaa', marginBottom: 4 }}>Destination</label>
+              <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Destination</label>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6 }}>
                 <input
                   className="input"
@@ -244,7 +244,7 @@ export default function ExportDatabaseDialog({ connectionId, database, onClose }
                   CREATE DATABASE
                 </label>
                 {createDatabase && (
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: '#aaa', marginTop: 4, marginLeft: 24 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)', marginTop: 4, marginLeft: 24 }}>
                     <input type="checkbox" checked={createDatabaseIfNotExists} onChange={e => setCreateDatabaseIfNotExists(e.target.checked)} disabled={exporting} />
                     IF NOT EXISTS
                   </label>
@@ -258,7 +258,7 @@ export default function ExportDatabaseDialog({ connectionId, database, onClose }
                   CREATE TABLE
                 </label>
                 {createTable && (
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: '#aaa', marginTop: 4, marginLeft: 24 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)', marginTop: 4, marginLeft: 24 }}>
                     <input type="checkbox" checked={createTableIfNotExists} onChange={e => setCreateTableIfNotExists(e.target.checked)} disabled={exporting} />
                     IF NOT EXISTS
                   </label>
@@ -272,8 +272,8 @@ export default function ExportDatabaseDialog({ connectionId, database, onClose }
               </label>
 
               {/* Schema objects */}
-              <div style={{ borderTop: '1px solid #515151', paddingTop: 8, marginTop: 4 }}>
-                <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>Schema Objects</div>
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 8, marginTop: 4 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>Schema Objects</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
                     <input type="checkbox" checked={exportViews} onChange={e => setExportViews(e.target.checked)} disabled={exporting} />
@@ -302,7 +302,7 @@ export default function ExportDatabaseDialog({ connectionId, database, onClose }
             {/* Table List */}
             <div style={{ marginBottom: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ fontSize: 12, color: '#aaa' }}>Tables</span>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Tables</span>
                 {!loadingTables && tables.length > 0 && (
                   <button
                     className="btn btn-secondary"
@@ -315,11 +315,11 @@ export default function ExportDatabaseDialog({ connectionId, database, onClose }
                 )}
               </div>
               {loadingTables ? (
-                <div style={{ fontSize: 12, color: '#666', padding: '8px 0' }}>Loading tables...</div>
+                <div style={{ fontSize: 12, color: 'var(--text-disabled)', padding: '8px 0' }}>Loading tables...</div>
               ) : tables.length === 0 ? (
-                <div style={{ fontSize: 12, color: '#666', padding: '8px 0' }}>No tables found.</div>
+                <div style={{ fontSize: 12, color: 'var(--text-disabled)', padding: '8px 0' }}>No tables found.</div>
               ) : (
-                <div style={{ maxHeight: 200, overflowY: 'auto', background: '#1e1e1e', borderRadius: 4, padding: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div style={{ maxHeight: 200, overflowY: 'auto', background: 'var(--bg-primary)', borderRadius: 4, padding: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {tables.map(table => (
                     <label key={table} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12 }}>
                       <input
@@ -337,7 +337,7 @@ export default function ExportDatabaseDialog({ connectionId, database, onClose }
 
             {/* Error */}
             {error && (
-              <div style={{ padding: 8, borderRadius: 4, marginBottom: 12, fontSize: 12, background: '#2a0000', color: '#ef4444' }}>
+              <div style={{ padding: 8, borderRadius: 4, marginBottom: 12, fontSize: 12, background: 'var(--danger-bg)', color: 'var(--danger)' }}>
                 {error}
               </div>
             )}
