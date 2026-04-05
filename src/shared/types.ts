@@ -51,7 +51,7 @@ export interface TabInfo {
   connectionId: string;
   connectionName: string;
   connectionColor: string;
-  type: 'table' | 'console' | 'schema' | 'object';
+  type: 'table' | 'console' | 'schema' | 'object' | 'monitor';
   database?: string;
   table?: string;
   objectType?: 'view' | 'procedure' | 'function' | 'trigger' | 'event';

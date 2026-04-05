@@ -265,4 +265,57 @@ export function registerIpcHandlers(
   // UI State
   ipcMain.handle('ui:load-state', () => fileManager.loadUiState());
   ipcMain.handle('ui:save-state', (_, state) => fileManager.saveUiState(state));
+
+  // Monitor
+  ipcMain.handle('monitor:processlist', async (_, connectionId) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    const [rows] = await pool.query('SHOW FULL PROCESSLIST');
+    return rows;
+  });
+
+  ipcMain.handle('monitor:global-status', async (_, connectionId) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    const [rows] = await pool.query('SHOW GLOBAL STATUS');
+    const result: Record<string, string> = {};
+    for (const row of rows as any[]) {
+      result[row.Variable_name] = row.Value;
+    }
+    return result;
+  });
+
+  ipcMain.handle('monitor:variables', async (_, connectionId) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    const [rows] = await pool.query('SHOW VARIABLES');
+    const result: Record<string, string> = {};
+    for (const row of rows as any[]) {
+      result[row.Variable_name] = row.Value;
+    }
+    return result;
+  });
+
+  ipcMain.handle('monitor:slow-log', async (_, connectionId) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    try {
+      const [rows] = await pool.query('SELECT * FROM mysql.slow_log ORDER BY start_time DESC LIMIT 100');
+      return rows;
+    } catch {
+      return [];
+    }
+  });
+
+  ipcMain.handle('monitor:innodb-status', async (_, connectionId) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    const [rows] = await pool.query('SHOW ENGINE INNODB STATUS');
+    return (rows as any[])[0]?.Status || '';
+  });
+
+  ipcMain.handle('monitor:kill-query', async (_, connectionId, processId) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    await pool.query(`KILL QUERY ${Number(processId)}`);
+  });
+
+  ipcMain.handle('monitor:kill-connection', async (_, connectionId, processId) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    await pool.query(`KILL ${Number(processId)}`);
+  });
 }

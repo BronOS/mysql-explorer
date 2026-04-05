@@ -84,6 +84,15 @@ const electronAPI = {
   uiLoadState: () => ipcRenderer.invoke('ui:load-state'),
   uiSaveState: (state: any) => ipcRenderer.invoke('ui:save-state', state),
 
+  // Monitor
+  monitorProcesslist: (connectionId: string) => ipcRenderer.invoke('monitor:processlist', connectionId),
+  monitorGlobalStatus: (connectionId: string) => ipcRenderer.invoke('monitor:global-status', connectionId),
+  monitorVariables: (connectionId: string) => ipcRenderer.invoke('monitor:variables', connectionId),
+  monitorSlowLog: (connectionId: string) => ipcRenderer.invoke('monitor:slow-log', connectionId),
+  monitorInnodbStatus: (connectionId: string) => ipcRenderer.invoke('monitor:innodb-status', connectionId),
+  monitorKillQuery: (connectionId: string, processId: number) => ipcRenderer.invoke('monitor:kill-query', connectionId, processId),
+  monitorKillConnection: (connectionId: string, processId: number) => ipcRenderer.invoke('monitor:kill-connection', connectionId, processId),
+
   // Events
   onRefresh: (callback: () => void) => {
     ipcRenderer.on('app:refresh', callback);
