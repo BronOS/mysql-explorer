@@ -60,7 +60,8 @@ export default function SchemaObjectTab({ tab, isActive }: Props) {
   const objectType = (tab.objectType ?? 'view') as ObjectType;
   const objectName = tab.objectName;
   const database = tab.database ?? '';
-  const isNew = objectName === undefined;
+  const [currentName, setCurrentName] = useState(objectName);
+  const isNew = !currentName;
 
   const [savedDdl, setSavedDdl] = useState<string>('');
   const [editCode, setEditCode] = useState<string>('');
@@ -117,9 +118,6 @@ export default function SchemaObjectTab({ tab, isActive }: Props) {
     setShowConfirm(true);
   };
 
-  // Track the current object name (may change after rename+save)
-  const [currentName, setCurrentName] = useState(objectName);
-
   const dropSql = (!isNew && currentName)
     ? `DROP ${OBJECT_TYPE_DDL_KEYWORD[objectType]} \`${database}\`.\`${currentName}\``
     : '';
@@ -139,7 +137,8 @@ export default function SchemaObjectTab({ tab, isActive }: Props) {
       }
       await ipc.schemaExecuteDdl(tab.connectionId, database, editCode.trim());
       // Extract the new name from the CREATE statement for future drops
-      const nameMatch = editCode.match(/(?:VIEW|PROCEDURE|FUNCTION|TRIGGER|EVENT)\s+`([^`]+)`/i);
+      // Must match the keyword immediately before the backtick-quoted name, skipping DEFINER/ALGORITHM clauses
+      const nameMatch = editCode.match(/\b(?:VIEW|PROCEDURE|FUNCTION|TRIGGER|EVENT)\s+`([^`]+)`/i);
       if (nameMatch) setCurrentName(nameMatch[1]);
       setSavedDdl(editCode.trim());
       setIsEditMode(false);
@@ -164,7 +163,7 @@ export default function SchemaObjectTab({ tab, isActive }: Props) {
   };
 
   const typeLabel = OBJECT_TYPE_LABELS[objectType];
-  const titleLabel = objectName ? `${typeLabel}: ${objectName}` : `${typeLabel}: (new)`;
+  const titleLabel = currentName ? `${typeLabel}: ${currentName}` : `${typeLabel}: (new)`;
 
   const extensions = useMemo(() => [
     sql({ dialect: MySQL }),
