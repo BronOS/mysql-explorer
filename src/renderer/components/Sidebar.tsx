@@ -94,6 +94,11 @@ export default function Sidebar({ width }: { width: number }) {
               name: db.name,
               tables: db.tables || [],
               columns: db.columns || {},
+              views: db.views || [],
+              procedures: db.procedures || [],
+              functions: db.functions || [],
+              triggers: db.triggers || [],
+              events: db.events || [],
               loaded: db.tables?.length > 0,
             })),
             loaded: true,
@@ -126,7 +131,7 @@ export default function Sidebar({ width }: { width: number }) {
               databases: freshDbs.map((name: string) => {
                 // Keep existing cached columns while refreshing
                 const cachedDb = cached?.databases?.find((d: any) => d.name === name);
-                return { name, tables: cachedDb?.tables || [], columns: cachedDb?.columns || {}, loaded: false };
+                return { name, tables: cachedDb?.tables || [], columns: cachedDb?.columns || {}, views: [], procedures: [], functions: [], triggers: [], events: [], loaded: false };
               }),
               loaded: true,
             });
@@ -144,6 +149,14 @@ export default function Sidebar({ width }: { width: number }) {
               // Fetch columns in background
               const columns = await ipc.schemaAllColumns(connId, dbName, tables).catch(() => ({}));
               dispatch({ type: 'SET_COLUMNS', connectionId: connId, database: dbName, columns });
+
+              // Fetch schema object counts
+              for (const [objType, fetcher] of Object.entries(objectTypeIpcMap)) {
+                const plural = objectTypePluralMap[objType];
+                (ipc as any)[fetcher](connId, dbName).then((items: string[]) => {
+                  dispatch({ type: 'SET_OBJECTS', connectionId: connId, database: dbName, objectType: plural, items });
+                }).catch(() => {});
+              }
 
               freshDbData.push({ name: dbName, tables, columns });
             }
