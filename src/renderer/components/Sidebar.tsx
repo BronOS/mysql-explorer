@@ -175,7 +175,7 @@ export default function Sidebar({ width }: { width: number }) {
       dispatch({
         type: 'SET_SCHEMA',
         connectionId: connId,
-        databases: dbs.map((name: string) => ({ name, tables: [], columns: {}, loaded: false })),
+        databases: dbs.map((name: string) => ({ name, tables: [], columns: {}, views: [], procedures: [], functions: [], triggers: [], events: [], loaded: false })),
         loaded: true,
       });
     }
@@ -194,7 +194,7 @@ export default function Sidebar({ width }: { width: number }) {
       dispatch({
         type: 'SET_SCHEMA',
         connectionId: conn.id,
-        databases: dbs.map((name: string) => ({ name, tables: [], columns: {}, loaded: false })),
+        databases: dbs.map((name: string) => ({ name, tables: [], columns: {}, views: [], procedures: [], functions: [], triggers: [], events: [], loaded: false })),
         loaded: true,
       });
       setExpandedConns(prev => new Set(prev).add(conn.id));
@@ -442,7 +442,7 @@ export default function Sidebar({ width }: { width: number }) {
               dispatch({
                 type: 'SET_SCHEMA',
                 connectionId: conn.id,
-                databases: dbs.map((name: string) => ({ name, tables: [], columns: {}, loaded: false })),
+                databases: dbs.map((name: string) => ({ name, tables: [], columns: {}, views: [], procedures: [], functions: [], triggers: [], events: [], loaded: false })),
                 loaded: true,
               });
               setStatus(`Dropped database ${database}`, 'success');
@@ -484,7 +484,7 @@ export default function Sidebar({ width }: { width: number }) {
             dispatch({
               type: 'SET_SCHEMA',
               connectionId: showCreateDatabase.connectionId,
-              databases: dbs.map((name: string) => ({ name, tables: [], columns: {}, loaded: false })),
+              databases: dbs.map((name: string) => ({ name, tables: [], columns: {}, views: [], procedures: [], functions: [], triggers: [], events: [], loaded: false })),
               loaded: true,
             });
           }}

@@ -51,9 +51,11 @@ export interface TabInfo {
   connectionId: string;
   connectionName: string;
   connectionColor: string;
-  type: 'table' | 'console' | 'schema';
+  type: 'table' | 'console' | 'schema' | 'object';
   database?: string;
   table?: string;
+  objectType?: 'view' | 'procedure' | 'function' | 'trigger' | 'event';
+  objectName?: string;
   lastAccessed: number;
 }
 
@@ -101,6 +103,11 @@ export interface SchemaTree {
       name: string;
       tables: string[];
       columns: { [tableName: string]: string[] };
+      views: string[];
+      procedures: string[];
+      functions: string[];
+      triggers: string[];
+      events: string[];
       loaded: boolean;
     }[];
     loaded: boolean;

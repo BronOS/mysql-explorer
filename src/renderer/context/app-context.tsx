@@ -36,7 +36,8 @@ type Action =
   | { type: 'REORDER_TABS'; fromIndex: number; toIndex: number }
   | { type: 'SET_SCHEMA'; connectionId: string; databases: SchemaTree[string]['databases']; loaded: boolean }
   | { type: 'SET_COLUMNS'; connectionId: string; database: string; columns: { [tableName: string]: string[] } }
-  | { type: 'SET_TABLES'; connectionId: string; database: string; tables: string[] };
+  | { type: 'SET_TABLES'; connectionId: string; database: string; tables: string[] }
+  | { type: 'SET_OBJECTS'; connectionId: string; database: string; objectType: 'views' | 'procedures' | 'functions' | 'triggers' | 'events'; items: string[] };
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -122,6 +123,18 @@ function reducer(state: AppState, action: Action): AppState {
       };
     }
 
+    case 'SET_OBJECTS': {
+      const connSchema = state.schema[action.connectionId];
+      if (!connSchema) return state;
+      const databases = connSchema.databases.map(db =>
+        db.name === action.database ? { ...db, [action.objectType]: action.items } : db
+      );
+      return {
+        ...state,
+        schema: { ...state.schema, [action.connectionId]: { ...connSchema, databases } },
+      };
+    }
+
     default:
       return state;
   }
@@ -165,7 +178,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       t.connectionId === opts.connectionId &&
       t.type === opts.type &&
       t.database === opts.database &&
-      t.table === opts.table
+      t.table === opts.table &&
+      t.objectType === opts.objectType &&
+      t.objectName === opts.objectName
     );
     if (existing) {
       dispatch({ type: 'SET_ACTIVE_TAB', tabId: existing.id });
