@@ -425,7 +425,7 @@ export default function Sidebar({ width }: { width: number }) {
                       {isGroupExpanded && items.map(name => {
                         const isObjActive = activeTab?.type === 'object' && activeTab.connectionId === conn.id && activeTab.database === db.name && activeTab.objectName === name && activeTab.objectType === objType;
                         return (
-                          <div key={name} className="tree-node-indent">
+                          <div key={name} className="tree-node-indent" ref={isObjActive ? activeNodeRef : undefined}>
                             <div
                               className={`tree-node ${isObjActive ? 'tree-node-active' : ''}`}
                               onClick={() => openTab({ connectionId: conn.id, connectionName: conn.name, connectionColor: conn.color, type: 'object', database: db.name, objectType: objType as any, objectName: name })}
