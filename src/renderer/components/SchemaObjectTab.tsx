@@ -117,20 +117,30 @@ export default function SchemaObjectTab({ tab, isActive }: Props) {
     setShowConfirm(true);
   };
 
-  const confirmSql = useMemo(() => {
-    if (isNew || !objectName) {
-      return editCode.trim();
-    }
-    const dropLine = `DROP ${OBJECT_TYPE_DDL_KEYWORD[objectType]} \`${database}\`.\`${objectName}\`;`;
-    return `${dropLine}\n${editCode.trim()}`;
-  }, [isNew, objectName, objectType, database, editCode]);
+  // Track the current object name (may change after rename+save)
+  const [currentName, setCurrentName] = useState(objectName);
+
+  const dropSql = (!isNew && currentName)
+    ? `DROP ${OBJECT_TYPE_DDL_KEYWORD[objectType]} \`${database}\`.\`${currentName}\``
+    : '';
+
+  const confirmSql = dropSql
+    ? `${dropSql};\n\n${editCode.trim()}`
+    : editCode.trim();
 
   const handleExecute = async () => {
     setShowConfirm(false);
     setSaving(true);
     setStatus('Executing DDL...', 'info');
     try {
-      await ipc.schemaExecuteDdl(tab.connectionId, database, confirmSql);
+      // Execute DROP and CREATE as separate statements
+      if (dropSql) {
+        await ipc.schemaDropObject(tab.connectionId, database, OBJECT_TYPE_DDL_KEYWORD[objectType], currentName);
+      }
+      await ipc.schemaExecuteDdl(tab.connectionId, database, editCode.trim());
+      // Extract the new name from the CREATE statement for future drops
+      const nameMatch = editCode.match(/(?:VIEW|PROCEDURE|FUNCTION|TRIGGER|EVENT)\s+`([^`]+)`/i);
+      if (nameMatch) setCurrentName(nameMatch[1]);
       setSavedDdl(editCode.trim());
       setIsEditMode(false);
       // Refresh sidebar object list
