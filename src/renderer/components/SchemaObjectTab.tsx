@@ -130,7 +130,7 @@ export default function SchemaObjectTab({ tab, isActive }: Props) {
     setSaving(true);
     setStatus('Executing DDL...', 'info');
     try {
-      await ipc.schemaExecuteDdl(tab.connectionId, confirmSql);
+      await ipc.schemaExecuteDdl(tab.connectionId, database, confirmSql);
       // Reload DDL to get the canonical form from the server
       if (!isNew && objectName) {
         const newDdl = await fetchDdl(ipc, tab.connectionId, database, objectType, objectName);

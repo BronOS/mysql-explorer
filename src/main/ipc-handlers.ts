@@ -137,8 +137,9 @@ export function registerIpcHandlers(
     return schemaBrowser.createEventDDL(pool, database, name);
   });
 
-  ipcMain.handle('schema:execute-ddl', async (_, connectionId, sql) => {
+  ipcMain.handle('schema:execute-ddl', async (_, connectionId, database, sql) => {
     const pool = await connectionManager.ensureConnected(connectionId);
+    if (database) await pool.query(`USE \`${database}\``);
     await pool.query(sql);
   });
 
