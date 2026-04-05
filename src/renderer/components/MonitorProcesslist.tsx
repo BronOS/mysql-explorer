@@ -80,8 +80,19 @@ export default function MonitorProcesslist({ connectionId, refreshTrigger }: Pro
 
   return (
     <div className="datagrid-container">
-      <div className="datagrid-header">
-        <table className="datagrid">
+      <div className="datagrid-wrapper">
+        <table className="datagrid" style={{ tableLayout: 'fixed' }}>
+          <colgroup>
+            <col style={{ width: 60 }} />
+            <col style={{ width: 100 }} />
+            <col style={{ width: 150 }} />
+            <col style={{ width: 100 }} />
+            <col style={{ width: 80 }} />
+            <col style={{ width: 60 }} />
+            <col style={{ width: 120 }} />
+            <col />
+            <col style={{ width: 70 }} />
+          </colgroup>
           <thead>
             <tr>
               <th>ID</th>
@@ -95,10 +106,6 @@ export default function MonitorProcesslist({ connectionId, refreshTrigger }: Pro
               <th>Actions</th>
             </tr>
           </thead>
-        </table>
-      </div>
-      <div className="datagrid-wrapper">
-        <table className="datagrid">
           <tbody>
             {rows.map((row) => (
               <tr
