@@ -1,4 +1,5 @@
-import { ipcMain } from 'electron';
+import { ipcMain, dialog, BrowserWindow } from 'electron';
+import fs from 'fs';
 import { ConnectionManager } from './connection-manager';
 import { SchemaBrowser } from './schema-browser';
 import { QueryExecutor } from './query-executor';
@@ -137,6 +138,59 @@ export function registerIpcHandlers(
   // Schema cache
   ipcMain.handle('schema:cache-load', () => fileManager.loadSchemaCache());
   ipcMain.handle('schema:cache-save', (_, cache) => fileManager.saveSchemaCache(cache));
+
+  // Export
+  ipcMain.handle('export:pick-save-file', async (_, defaultName: string, ext: string) => {
+    const win = BrowserWindow.getFocusedWindow();
+    const filters: Record<string, { name: string; extensions: string[] }> = {
+      sql: { name: 'SQL Files', extensions: ['sql'] },
+      csv: { name: 'CSV Files', extensions: ['csv'] },
+      json: { name: 'JSON Files', extensions: ['json'] },
+      md: { name: 'Markdown Files', extensions: ['md'] },
+      tsv: { name: 'TSV Files', extensions: ['tsv'] },
+      html: { name: 'HTML Files', extensions: ['html'] },
+    };
+    const result = await dialog.showSaveDialog(win!, {
+      title: 'Export',
+      defaultPath: defaultName,
+      filters: [filters[ext] || { name: 'All Files', extensions: ['*'] }],
+    });
+    if (result.canceled || !result.filePath) return null;
+    return result.filePath;
+  });
+
+  ipcMain.handle('export:write-file', async (_, filePath: string, content: string) => {
+    fs.writeFileSync(filePath, content, 'utf-8');
+  });
+
+  ipcMain.handle('export:fetch-all-rows', async (_, connectionId: string, database: string, table: string, columns?: string[]) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    const colExpr = columns && columns.length > 0 ? columns.map(c => '`' + c + '`').join(', ') : '*';
+    const sql = 'SELECT ' + colExpr + ' FROM `' + database + '`.`' + table + '`';
+    const [rows] = await pool.query(sql);
+    return rows;
+  });
+
+  // Import SQL file
+  ipcMain.handle('import:pick-sql-file', async () => {
+    const win = BrowserWindow.getFocusedWindow();
+    const result = await dialog.showOpenDialog(win!, {
+      title: 'Import SQL File',
+      filters: [{ name: 'SQL Files', extensions: ['sql'] }],
+      properties: ['openFile'],
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
+    const filePath = result.filePaths[0];
+    const stat = fs.statSync(filePath);
+    return { filePath, fileName: filePath.split('/').pop()!, size: stat.size };
+  });
+
+  ipcMain.handle('import:execute-sql-file', async (event, connectionId, filePath, database) => {
+    const pool = await connectionManager.ensureConnected(connectionId);
+    return queryExecutor.importSqlFile(pool, filePath, database, (progress) => {
+      event.sender.send('import:progress', progress);
+    });
+  });
 
   // Snippets
   ipcMain.handle('snippets:load', () => fileManager.loadSnippets());

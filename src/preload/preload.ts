@@ -44,6 +44,22 @@ const electronAPI = {
   schemaCacheLoad: () => ipcRenderer.invoke('schema:cache-load'),
   schemaCacheSave: (cache: any) => ipcRenderer.invoke('schema:cache-save', cache),
 
+  // Export
+  exportPickSaveFile: (defaultName: string, ext: string) => ipcRenderer.invoke('export:pick-save-file', defaultName, ext),
+  exportWriteFile: (filePath: string, content: string) => ipcRenderer.invoke('export:write-file', filePath, content),
+  exportFetchAllRows: (connectionId: string, database: string, table: string, columns?: string[]) =>
+    ipcRenderer.invoke('export:fetch-all-rows', connectionId, database, table, columns),
+
+  // Import SQL file
+  importPickSqlFile: () => ipcRenderer.invoke('import:pick-sql-file'),
+  importExecuteSqlFile: (connectionId: string, filePath: string, database?: string) =>
+    ipcRenderer.invoke('import:execute-sql-file', connectionId, filePath, database),
+  onImportProgress: (callback: (progress: { executed: number; errors: number; currentStatement: string }) => void) => {
+    const handler = (_: any, progress: any) => callback(progress);
+    ipcRenderer.on('import:progress', handler);
+    return () => { ipcRenderer.removeListener('import:progress', handler); };
+  },
+
   // Snippets
   snippetsLoad: () => ipcRenderer.invoke('snippets:load'),
   snippetsSave: (snippets: any[]) => ipcRenderer.invoke('snippets:save', snippets),
