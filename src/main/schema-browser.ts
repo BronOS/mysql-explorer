@@ -8,7 +8,7 @@ export class SchemaBrowser {
   }
 
   async listTables(pool: Pool, database: string): Promise<string[]> {
-    const [rows] = await pool.query(`SHOW TABLES FROM \`${database}\``);
+    const [rows] = await pool.query(`SHOW FULL TABLES FROM \`${database}\` WHERE Table_type = 'BASE TABLE'`);
     return (rows as any[]).map(r => Object.values(r)[0] as string);
   }
 
