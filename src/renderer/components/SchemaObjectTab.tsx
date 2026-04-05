@@ -55,7 +55,7 @@ async function fetchDdl(
 
 export default function SchemaObjectTab({ tab, isActive }: Props) {
   const ipc = useIpc();
-  const { setStatus, dispatch } = useAppContext();
+  const { setStatus, dispatch, closeTab, openTab } = useAppContext();
 
   const objectType = (tab.objectType ?? 'view') as ObjectType;
   const objectName = tab.objectName;
@@ -136,12 +136,10 @@ export default function SchemaObjectTab({ tab, isActive }: Props) {
         await ipc.schemaDropObject(tab.connectionId, database, OBJECT_TYPE_DDL_KEYWORD[objectType], currentName);
       }
       await ipc.schemaExecuteDdl(tab.connectionId, database, editCode.trim());
-      // Extract the new name from the CREATE statement for future drops
-      // Must match the keyword immediately before the backtick-quoted name, skipping DEFINER/ALGORITHM clauses
+      // Extract the new name from the CREATE statement
       const nameMatch = editCode.match(/\b(?:VIEW|PROCEDURE|FUNCTION|TRIGGER|EVENT)\s+`([^`]+)`/i);
-      if (nameMatch) setCurrentName(nameMatch[1]);
-      setSavedDdl(editCode.trim());
-      setIsEditMode(false);
+      const newName = nameMatch?.[1] || currentName;
+
       // Refresh sidebar object list
       const pluralMap: Record<string, 'views' | 'procedures' | 'functions' | 'triggers' | 'events'> = {
         view: 'views', procedure: 'procedures', function: 'functions', trigger: 'triggers', event: 'events',
@@ -153,6 +151,16 @@ export default function SchemaObjectTab({ tab, isActive }: Props) {
         const items: string[] = await (ipc as any)[fetcherMap[objectType]](tab.connectionId, database);
         dispatch({ type: 'SET_OBJECTS', connectionId: tab.connectionId, database, objectType: pluralMap[objectType], items });
       } catch {}
+
+      // If name changed, close this tab and open a new one with the new name
+      if (newName && newName !== currentName) {
+        closeTab(tab.id);
+        openTab({ connectionId: tab.connectionId, connectionName: tab.connectionName, connectionColor: tab.connectionColor, type: 'object', database, objectType, objectName: newName });
+      } else {
+        setCurrentName(newName);
+        setSavedDdl(editCode.trim());
+        setIsEditMode(false);
+      }
       setStatus(`${OBJECT_TYPE_LABELS[objectType]} saved successfully`, 'success');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
